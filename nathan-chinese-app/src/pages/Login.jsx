@@ -1,74 +1,30 @@
 import { RouterContext, Link } from "../App";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
-  getRedirectResult,
-  signInWithPopup,
-  signInWithRedirect,
-} from "firebase/auth";
-import { auth, googleProvider } from "../firebase";
+  getCurrentUser,
+  loginAnonymously,
+  loginWithGoogle,
+  logout,
+} from "../firebase/auth";
+
 const LoginPage = () => {
   const { navigate } = useContext(RouterContext);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // useEffect(() => {
-  //   // Add delay before checking redirect result
-  //   const delayTimeout = setTimeout(() => {
-  //     console.log("Checking redirect result after delay...");
-
-  //     const timeoutId = setTimeout(() => {
-  //       console.log("getRedirectResult is taking too long - likely hanging");
-  //     }, 5000);
-
-  //     getRedirectResult(auth)
-  //       .then((result) => {
-  //         clearTimeout(timeoutId);
-  //         console.log("Redirect result:", result);
-  //         if (result?.user) {
-  //           console.log("Signed in user:", result.user);
-  //           navigate("/play");
-  //         } else {
-  //           console.log("No redirect result or no user");
-  //         }
-  //       })
-  //       .catch((err) => {
-  //         clearTimeout(timeoutId);
-  //         console.error("Redirect result error:", err);
-  //       });
-  //   }, 1000); // 1 second delay
-
-  //   // Cleanup function to clear the delay timeout
-  //   return () => {
-  //     clearTimeout(delayTimeout);
-  //   };
-  // }, [navigate]);
-
+  useEffect(() => {
+    const setIsLoggedInWithUser = async () => {
+      const user = await getCurrentUser();
+      setIsLoggedIn(user != null);
+    };
+    setIsLoggedInWithUser();
+  }, []);
   const handleGoogleSignIn = async () => {
-    try {
-      signInWithPopup(auth, googleProvider)
-        .then((result) => {
-          // This gives you a Google Access Token. You can use it to access the Google API.
-
-          // The signed-in user info.
-          const user = result.user;
-          // IdP data available using getAdditionalUserInfo(result)
-          // ...
-          console.log(user);
-        })
-        .catch((error) => {
-          // Handle Errors here.
-          const errorCode = error.code;
-          const errorMessage = error.message;
-          // The email of the user's account used.
-          const email = error.customData.email;
-
-          console.log(error);
-          // ...
-        });
-    } catch (err) {
-      console.error(err);
-    }
+    await loginWithGoogle();
+    navigate("/play");
   };
 
-  const handleGuestLogin = () => {
+  const handleGuestLogin = async () => {
+    await loginAnonymously();
     navigate("/play");
   };
 
@@ -83,7 +39,7 @@ const LoginPage = () => {
         </div>
 
         <button
-          onClick={handleGoogleSignIn}
+          onClick={isLoggedIn ? logout : handleGoogleSignIn}
           className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-300 rounded-xl px-6 py-3 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors disabled:opacity-50 !disabled:cursor-not-allowed pb-4"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -104,7 +60,7 @@ const LoginPage = () => {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Continue with Google
+          {isLoggedIn ? "Sign out" : "Continue with Google"}
         </button>
 
         <div className="relative p-3">
@@ -134,3 +90,5 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+
+export { getCurrentUser };
