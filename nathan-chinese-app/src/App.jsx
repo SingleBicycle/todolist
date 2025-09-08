@@ -97,7 +97,7 @@ function Navbar({ user, isLoading }) {
                 onClick={() => {
                   setIsDroppedDown((prev) => !prev);
                 }}
-                className="cursor-pointer overflow-clip rounded-full shadow-md border !p-1 border-gray-200 w-12 h-12 flex items-center justify-center"
+                className="cursor-pointer overflow-clip rounded-full shadow-md border !p-0 border-gray-200 w-12 h-12 flex items-center justify-center"
               >
                 <img
                   src={user.photoURL || anonymousPfp}
