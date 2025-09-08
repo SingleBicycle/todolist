@@ -6,7 +6,7 @@ import { LogOut } from "lucide-react";
 import ScoreBoardPage from "./pages/ScoreBoard";
 import { logout } from "./firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
-import anonymousPfp from "/src/assets/anonymous-pfp-50x50.png";
+import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 import { auth } from "./firebase/config";
 const RouterContext = createContext();
 
