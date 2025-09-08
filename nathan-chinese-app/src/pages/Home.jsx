@@ -31,7 +31,10 @@ const HomePage = () => {
             Learn or improve your Chinese writing skill with our fun interactive
             app.
           </p>
-          <Link className=" bg-[var(--primary)] text-white shadow-md">
+          <Link
+            to="/login"
+            className=" bg-[var(--primary)] text-white shadow-md"
+          >
             Learn now
           </Link>
         </div>
