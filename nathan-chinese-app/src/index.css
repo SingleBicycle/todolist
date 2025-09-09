@@ -10,33 +10,23 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --primary: #58cc02;
-  --accent: #1cb0f0;
-  --text: #828282;
-  --background: #fcfcfc;
+  --primary: #2563eb;
+  --secondary: #ebf2ff;
+  --text: #111827;
+  --accent: #ea580c;
 }
 
-button {
-  padding: 1rem 3rem;
+button,
+a {
+  padding: 0.75rem 3rem;
   border-radius: 1rem;
   cursor: pointer;
-  font-weight: 500;
 }
 
-button:hover {
-  filter: brightness(110%)
-}
 
 h1,
 h2,
-h3 {
-  color: var(--primary)
-}
-
+h3,
 p {
-  color: var(--text)
-}
-
-span {
-  color: var(--accent)
+  color: var(--text);
 }

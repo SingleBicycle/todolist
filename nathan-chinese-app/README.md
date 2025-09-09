@@ -1,5 +1,10 @@
 # React + Vite
 
+## Starting server
+
+cd nathan-chinese-app/
+npm run dev
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
@@ -10,8 +15,8 @@ Currently, two official plugins are available:
 Backend Help:
 We will be using ExpressJS with Vite for the backend component.
 
- - [ExpressJS](https://expressjs.com/)
- - [Vite](https://vite.dev/guide/backend-integration.html)
+- [ExpressJS](https://expressjs.com/)
+- [Vite](https://vite.dev/guide/backend-integration.html)
 
 ## Expanding the ESLint configuration
 

@@ -1,87 +1,167 @@
-import { BookOpen, Smartphone, CheckSquare, Gift } from "lucide-react";
+import { useState, useEffect, createContext, useContext, useRef } from "react";
+import HomePage from "./pages/Home";
+import LoginPage from "./pages/Login";
+import PlayPage from "./pages/Play";
+import { LogOut } from "lucide-react";
+import ScoreBoardPage from "./pages/ScoreBoard";
+import { logout } from "./firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
+import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
+import { auth } from "./firebase/config";
+const RouterContext = createContext();
+
+function Router({ children }) {
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => setCurrentPath(window.location.pathname);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigate = (path) => {
+    window.history.pushState({}, "", path);
+    setCurrentPath(path);
+  };
+
+  return (
+    <RouterContext.Provider value={{ currentPath, navigate }}>
+      {children}
+    </RouterContext.Provider>
+  );
+}
+
+function Route({ path, component: Component }) {
+  const { currentPath } = useContext(RouterContext);
+  return currentPath === path ? <Component /> : null;
+}
+
+function Link({ to, children, className = "" }) {
+  const { navigate } = useContext(RouterContext);
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    navigate(to);
+  };
+
+  return (
+    <a href={to} onClick={handleClick} className={className}>
+      {children}
+    </a>
+  );
+}
+
+function Navbar({ user, isLoading }) {
+  const [isDroppedDown, setIsDroppedDown] = useState(false);
+  const { navigate } = useContext(RouterContext);
+
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsDroppedDown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <nav className="backdrop-blur-sm border-b z-50 border-gray-200 w-full bg-white fixed top-0 shadow-md">
+      <div className="container mx-auto py-3 px-6 flex justify-between items-center w-full">
+        <Link
+          to="/"
+          className="!px-0 text-2xl !font-bold text-[var(--primary)]"
+        >
+          {import.meta.env.VITE_APP_NAME}
+        </Link>
+
+        {isLoading ? (
+          <div className="w-6 h-6 border-2 border-gray-300 border-t-[var(--primary)] rounded-full animate-spin"></div>
+        ) : user === null ? (
+          <Link
+            to="/login"
+            className="bg-[var(--primary)] text-white px-4 py-2 rounded-md"
+          >
+            Sign In
+          </Link>
+        ) : (
+          // Signed in
+          <div className="relative" ref={menuRef}>
+            <div className="flex justify-center items-center gap-3">
+              <p className="font-semibold text-md -mb-2">5439.4 pts</p>
+              <div
+                onClick={() => {
+                  setIsDroppedDown((prev) => !prev);
+                }}
+                className="cursor-pointer overflow-clip rounded-full shadow-md border !p-0 border-gray-200 w-12 h-12 flex items-center justify-center"
+              >
+                <img
+                  src={user.photoURL || anonymousPfp}
+                  alt="profile"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </div>
+
+            {isDroppedDown && (
+              <div className="absolute shadow-md rounded-lg ml-3 mt-3 bg-white">
+                <button
+                  onClick={async () => {
+                    const { success } = await logout();
+                    if (success) {
+                      navigate("/");
+                    }
+                  }}
+                  className="flex items-center text-sm text-gray-700 !px-6 !rounded-lg text-nowrap hover:bg-gray-50"
+                >
+                  <LogOut className="w-4 mr-2" /> Sign out
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+}
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [isLoading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          email: firebaseUser.email,
+        });
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--primary)]">
-      {/* Hero Section */}
-      <section
-        className="container mx-auto px-6 py-24 md:text-left text-center w-full flex flex-col
-      md:flex-row justify-between gap-8"
-      >
-        <div className="w-full md:w-2/3 lg:w-1/2">
-          <h1
-            className="text-6xl leading-16
-           font-bold mb-6"
-          >
-            Master Kanji & Chinese Writing
-          </h1>
-          <p className="text-lg max-w-2xl mb-8">
-            Learn or improve your Chinese writing skill with our fun interactive
-            app.
-          </p>
-          <button className="bg-[var(--primary)] text-[var(--background)] shadow-md">
-            Learn now
-          </button>
-          <button className="ml-8 bg-[var(--background)] text-[var(--accent)] shadow-md">
-            More info
-          </button>
-        </div>
-        <div className="flex justify-center md:w-1/3 lg:w-1/2 min-h-72">
-          <div className="w-full shadow-lg rounded-2xl flex items-center justify-center">
-            <span>[ Demo Illustration ]</span>
-          </div>
-        </div>
-      </section>
-      {/* Features */}
-      <section className="container mx-auto px-6 py-20">
-        <h2 className="text-4xl font-bold text-center mb-12">
-          Why Choose Our App?
-        </h2>
-        <div className="grid gap-10 md:grid-cols-2">
-          <FeatureCard
-            icon={<BookOpen className="w-10 h-10" />}
-            title="Stroke Order Guides"
-            desc="Practice with correct stroke orders "
-          />
-          <FeatureCard
-            icon={<CheckSquare className="w-10 h-10" />}
-            title="Pinpoint Accuracy"
-            desc="Trace and check accuracy with AI"
-          />
-          <FeatureCard
-            icon={<Smartphone className="w-10 h-10" />}
-            title="Mobile Ready"
-            desc="Learn anytime, anywhere on any device."
-          />
-          <FeatureCard
-            icon={<Gift className="w-10 h-10" />}
-            title="All Free"
-            desc="All features are forever free."
-          />
-        </div>
-      </section>
-      {/* CTA */}
-      <section className="bg-[var(--accent)] py-16 text-center">
-        <h2 className="text-4xl font-bold mb-4 !text-[var(--background)]">
-          Ready to Begin?
-        </h2>
-        <p className="mb-8 !text-[var(--background)]">
-          Start mastering Kanji & Chinese writing today!
-        </p>
-        <button className="bg-[var(--background)] text-[var(--accent)] px-8 py-3 rounded-2xl font-medium shadow-md hover:bg-background">
-          Get Started
-        </button>
-      </section>
-    </div>
+    <Router>
+      <div className="min-h-screen bg-white">
+        <Navbar user={user} isLoadingProfile={isLoading} />
+        <main>
+          <Route path="/" component={HomePage} />
+          <Route path="/login" component={LoginPage} />
+          <Route path="/play" component={PlayPage} />
+          <Route path="/scoreboard" component={ScoreBoardPage} />
+        </main>
+      </div>
+    </Router>
   );
 }
 
-function FeatureCard({ icon, title, desc }) {
-  return (
-    <div className="bg-[var(--background)] backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 text-center hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-      <div className="mb-6 flex justify-center">{icon}</div>
-      <h3 className="text-xl font-semibold mb-3">{title}</h3>
-      <p className="text-text/70 leading-relaxed text-[var(--text)]">{desc}</p>
-    </div>
-  );
-}
+export { Link, RouterContext };
