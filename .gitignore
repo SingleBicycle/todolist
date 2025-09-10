@@ -1,6 +1,8 @@
 dist-ssr
 *.local
+.venv
 
+scripts/private_key.json
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -154,3 +156,4 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+node_modules
