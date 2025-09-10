@@ -21,3 +21,11 @@ We will be using ExpressJS with Vite for the backend component.
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Running
+
+Run the backend with `npm run dev` inside the server folder.
+
+Run the frontend with `npm run dev` inside the root folder.
+
+You can now visit the website at `localhost:5173`.
