@@ -8,19 +8,12 @@ import { logout } from "./firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 import { auth } from "./firebase/config";
-import axios from "axios";
 const RouterContext = createContext();
 
 function Router({ children }) {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
-  const fetchApi = async () => {
-    const response = await axios.get("http://localhost:8080/api");
-    console.log(response.data.fruits);
-  }
-
   useEffect(() => {
-    fetchApi();
     const handlePopState = () => setCurrentPath(window.location.pathname);
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
