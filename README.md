@@ -2,8 +2,11 @@
 
 ## Starting server
 
-cd nathan-chinese-app/
 npm run dev
+
+## Running script
+
+python3 firebase.py [overwrite] [premium_level_start] (eg. python3 firebase.py 1 4)
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
