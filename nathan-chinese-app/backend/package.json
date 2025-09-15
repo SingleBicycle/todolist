@@ -1,0 +1,5 @@
+{
+  "name": "backend",
+  "type": "module",
+  "scripts": { "dev": "node server.js" }
+}
