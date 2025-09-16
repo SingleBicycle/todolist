@@ -4,7 +4,52 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, googleProvider } from "./config";
+
+// Create user profile if it doesn't exist yet
+// Otherwise just update the login date
+const createUserProfile = async (user) => {
+  if (!user) return null;
+
+  const userRef = doc(db, 'users', user.uid);
+  const date = new Date();
+  const timestamp = Math.floor(date.getTime() / 1000);
+
+  try {
+    // Check if user already exists
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      // Create new user profile with default values if user does not exist
+      console.log("User does not exist, creating profile for " + user.email)
+      await setDoc(userRef, {
+        email: user.email || '',
+        first_name: user.displayName ? user.displayName.split(' ')[0] : '',
+        last_name: user.displayName ? user.displayName.split(' ')[1] || '' : '',
+        is_admin: false,
+        points: 0,
+        last_word: null,
+        completed_words: [],
+        is_on_random_mode: false,
+        last_login_at: timestamp,
+        last_played_at: null,
+        created_at: timestamp
+      });
+    } else {
+      // Update last login time for existing users
+      console.log("User exists, updating last login timestamp")
+      await updateDoc(userRef, {
+        last_login_at: timestamp
+      });
+    }
+
+    return (await getDoc(userRef)).data();
+  } catch (error) {
+    console.error('Error creating/updating user profile:', error);
+    return null;
+  }
+};
 
 const getCurrentUser = () => {
   return new Promise((resolve, reject) => {
@@ -35,7 +80,7 @@ const loginAnonymously = async () => {
     }
     const result = await signInAnonymously(auth);
 
-    return result.user;
+    return await createUserProfile(result.user);
   } catch (error) {
     console.error(error);
   }
@@ -48,7 +93,7 @@ const loginWithGoogle = async () => {
       await logout();
     }
     const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    return await createUserProfile(result.user);
   } catch (err) {
     console.error(err);
   }
@@ -66,4 +111,4 @@ const logout = async () => {
   return null;
 };
 
-export { getCurrentUser, logout, loginAnonymously, loginWithGoogle };
+export { createUserProfile, getCurrentUser, logout, loginAnonymously, loginWithGoogle };
