@@ -5,7 +5,7 @@ import {
   signOut,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, googleProvider } from "./config";
+import { auth, db, googleProvider } from "./config";
 
 // Create user profile if it doesn't exist yet
 // Otherwise just update the login date
