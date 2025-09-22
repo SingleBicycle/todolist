@@ -16,13 +16,7 @@ const RouterContext = createContext();
 function Router({ children }) {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
-  const fetchApi = async () => {
-    const response = await axios.get("http://localhost:8080/api");
-    console.log(response.data.fruits);
-  }
-
   useEffect(() => {
-    fetchApi();
     const handlePopState = () => setCurrentPath(window.location.pathname);
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -151,7 +145,7 @@ export default function App() {
       <div className="min-h-screen bg-white pt-[64px]">
         <Navbar user={user} isLoading={isLoading} />
 
-        <main>
+        <main className="mt-6">
           <Route path="/" component={HomePage} />
           <Route path="/login" component={LoginPage} />
           <Route path="/play" component={PlayPage} />
