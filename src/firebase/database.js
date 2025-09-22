@@ -25,6 +25,24 @@ async function getUserById(uid) {
   }
 }
 
+async function getAllUsers() {
+  try {
+    // Fetch all documents from users collection
+    const querySnapshot = await getDocs(collection(db, 'users'));
+
+    // Map documents to an array of user objects
+    const users = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return users;
+  } catch (error) {
+    console.error('Error fetching all users:', error);
+    throw error;
+  }
+}
+
 // Update
 async function updateUser(uid, updateData) {
   try {
@@ -50,3 +68,5 @@ async function deleteUser(uid) {
     throw error;
   }
 }
+
+export { getUserById, getAllUsers, updateUser, deleteUser };
