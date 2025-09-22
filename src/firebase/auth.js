@@ -29,7 +29,7 @@ const createUserProfile = async (user) => {
         last_name: user.displayName ? user.displayName.split(' ')[1] || '' : '',
         is_admin: false,
         points: 0,
-        last_word: null,
+        last_word: "f5OY6xCdf4LCGkbjIHMj",  // default to 1 as the last word: 一
         completed_words: [],
         is_on_random_mode: false,
         last_login_at: timestamp,
