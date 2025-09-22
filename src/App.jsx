@@ -145,7 +145,7 @@ export default function App() {
       <div className="min-h-screen bg-white pt-[64px]">
         <Navbar user={user} isLoading={isLoading} />
 
-        <main>
+        <main className="mt-6">
           <Route path="/" component={HomePage} />
           <Route path="/login" component={LoginPage} />
           <Route path="/play" component={PlayPage} />
