@@ -45,26 +45,31 @@ const ScoreBoardPage = () => {
         Scoreboard
       </h2>
 
-      <table>
-        <thead>
-          <tr>
-            <th>First name</th>
-            <th>Last name</th>
-            <th>Last played at</th>
-            <th>Points</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user, index) => (
-            <tr key={user.id}>
-              <td>{user.first_name}</td>
-              <td>{user.last_name}</td>
-              <td>{user.last_played_at}</td>
-              <td>{user.points || 0}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="flex flex-col items-center justify-center">
+        <div className="w-80/100 bg-[var(--secondary)] rounded-md">
+          <table className="w-full">
+            <thead className="bg-[var(--primary)]">
+              <tr>
+                <th>First name</th>
+                <th>Last name</th>
+                <th>Last played at</th>
+                <th>Points</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user, index) => (
+                <tr key={user.id}>
+                  <td>{user.first_name}</td>
+                  <td>{user.last_name}</td>
+                  <td>{user.last_played_at}</td>
+                  <td>{user.points || 0}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 };
