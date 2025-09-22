@@ -9,7 +9,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 import { auth } from "./firebase/config";
 
-import HandwritePractice from "./pages/handWritingpractice.jsx";
 import axios from "axios";
 const RouterContext = createContext();
 
@@ -163,7 +162,6 @@ export default function App() {
           <Route path="/login" component={LoginPage} />
           <Route path="/play" component={PlayPage} />
           <Route path="/scoreboard" component={ScoreBoardPage} />
-          <Route path="/practice" component={HandwritePractice} />
         </main>
       </div>
     </Router>

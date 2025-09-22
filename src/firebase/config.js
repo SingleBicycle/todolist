@@ -1,7 +1,9 @@
+// CLIENT-SIDE SDK (React, Vite, etc.)
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+// ------------------- CLIENT CONFIG -------------------
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,8 +17,12 @@ const app = initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
 const db = getFirestore(app);
+
 const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope("email");
 googleProvider.addScope("profile");
 
+// ------------------- SERVER FUNCTIONS -------------------
+
+// ------------------- EXPORTS FOR CLIENT -------------------
 export { auth, db, app, googleProvider };

@@ -12,7 +12,12 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.12",
     "axios": "^1.11.0",
+<<<<<<< HEAD
+=======
+    "cors": "^2.8.5",
+>>>>>>> 40a1264b15428747bcb70edf52cfff5240ec3c3e
     "firebase": "^12.2.1",
+    "hanzi-writer": "^3.7.3",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
