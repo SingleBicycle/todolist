@@ -83,7 +83,10 @@ const HomePage = () => {
         <p className="mb-8 !text-white">
           Start mastering Kanji & Chinese writing today!
         </p>
-        <Link className="bg-white text-[var(--primary)] px-8 py-3 rounded-2xl font-medium shadow-md hover:bg-background">
+        <Link
+          to="/login"
+          className="bg-white text-[var(--primary)] px-8 py-3 rounded-2xl font-medium shadow-md hover:bg-background"
+        >
           Get Started
         </Link>
       </section>
