@@ -26,3 +26,4 @@ googleProvider.addScope("profile");
 
 // ------------------- EXPORTS FOR CLIENT -------------------
 export { auth, db, app, googleProvider };
+
