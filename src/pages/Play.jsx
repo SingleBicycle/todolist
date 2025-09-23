@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
+
+const WIDTH = 600;
+const HEIGHT = 650;
 
 const PlayPage = () => {
   const [target, setTarget] = useState("木");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-
+  const [showModal, setShowModal] = useState(false);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const drawing = useRef(false);
@@ -13,15 +17,15 @@ const PlayPage = () => {
 
   useEffect(() => {
     const c = canvasRef.current;
-    c.width = 384;
-    c.height = 384;
+    c.width = WIDTH;   // internal pixel width
+    c.height = HEIGHT; // internal pixel height
     const ctx = c.getContext("2d", { willReadFrequently: true });
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, c.width, c.height);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineWidth = 16;
-    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = "#111827";
     ctxRef.current = ctx;
   }, []);
 
@@ -34,11 +38,13 @@ const PlayPage = () => {
       y: (p.clientY - r.top) * (c.height / r.height),
     };
   };
+
   const down = (e) => {
     e.preventDefault();
     drawing.current = true;
     last.current = getPos(e);
   };
+
   const move = (e) => {
     if (!drawing.current) return;
     const p = getPos(e);
@@ -49,30 +55,26 @@ const PlayPage = () => {
     ctx.stroke();
     last.current = p;
   };
+
   const up = () => {
     drawing.current = false;
   };
 
   const clearCanvas = () => {
-    const c = canvasRef.current,
-      ctx = ctxRef.current;
+    const c = canvasRef.current;
+    const ctx = ctxRef.current;
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, c.width, c.height);
     setResult(null);
     setError(null);
   };
 
-  const exportPNG = () => {
-    // simple export (no cropping) so we can verify quickly
-    return canvasRef.current.toDataURL("image/png");
-  };
-
-  const evaluate = async () => {
+   const evaluate = async () => {
     try {
       setLoading(true);
       setError(null);
       setResult(null);
-      const dataUrl = exportPNG();
+      const dataUrl = canvasRef.current.toDataURL("image/png");
 
       const res = await fetch("/api/eval-handwriting", {
         method: "POST",
@@ -80,10 +82,7 @@ const PlayPage = () => {
         body: JSON.stringify({ image: dataUrl, target }),
       });
 
-      const text = await res.text(); // get raw text
-      console.log("[eval] status", res.status, "body", text.slice(0, 400));
-
-      // Try to parse JSON; if it fails, still show the raw text
+      const text = await res.text();
       let parsed = null;
       try {
         parsed = JSON.parse(text);
@@ -91,35 +90,30 @@ const PlayPage = () => {
         /* ignore */
       }
 
-      setResult({ parsed, raw: text }); // store both
+      setResult({ parsed, raw: text });
+      setShowModal(true); // open modal
       if (!res.ok) throw new Error(text);
     } catch (e) {
       setError(String(e));
+      setShowModal(true); // also open modal for errors
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: 20, maxWidth: 800, margin: "0 auto" }}>
-      <h1 style={{ marginBottom: 8 }}>Handwriting Practice</h1>
-      <label style={{ display: "block", marginBottom: 12 }}>
-        Target:&nbsp;
-        <input
-          value={target}
-          onChange={(e) => setTarget(e.target.value)}
-          style={{ fontSize: 18, width: 120 }}
-        />
-      </label>
+    <div className="container px-6 m-auto pt-10  max-w-[600px] max-h-[650px]">
+      <div>
+      <p>Lets try the character: {target}</p>
+      </div>
 
       <canvas
+
         ref={canvasRef}
-        style={{
-          border: "2px solid #333",
-          borderRadius: 8,
-          touchAction: "none",
-          display: "block",
-        }}
+        style={{ touchAction: "none" }}
+        className={`rounded-md border-2 border-gray-300 
+         w-full h-auto
+          ${loading ? "!cursor-not-allowed pointer-events-none opacity-50" : ""}`}
         onMouseDown={down}
         onMouseMove={move}
         onMouseUp={up}
@@ -128,77 +122,66 @@ const PlayPage = () => {
         onTouchMove={move}
         onTouchEnd={up}
       />
+      <div className="flex justify-between pt-3">
+      <button
+  disabled={loading}
+  onClick={clearCanvas}
+  className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md
+              ${loading ? "!cursor-not-allowed opacity-50" : ""}`}
+>
+  Clear
+</button>
 
-      <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
-        <button
-          onClick={clearCanvas}
-          style={{ padding: "10px 16px", fontSize: 18 }}
-        >
-          Clear
-        </button>
-        <button
-          onClick={evaluate}
-          disabled={loading}
-          style={{
-            padding: "12px 20px",
-            fontSize: 20,
-            fontWeight: 700,
-            background: "#2563eb",
-            color: "#fff",
-            borderRadius: 8,
-          }}
-        >
-          {loading ? "Evaluating…" : "Evaluate"}
-        </button>
+<button
+  disabled={loading}
+  onClick={evaluate}
+  className={`bg-[var(--primary)] text-white !px-8 !rounded-md
+              ${loading ? "!cursor-not-allowed opacity-50" : ""}`}
+>
+  {loading ? "Evaluating…" : "Evaluate"}
+</button>
       </div>
-
-      <div style={{ marginTop: 16 }}>
-        {error && <div style={{ color: "crimson" }}>Error: {error}</div>}
-
-        {result && (
-          <div
-            style={{ padding: 12, border: "1px solid #eee", borderRadius: 8 }}
-          >
-            {(() => {
-              const parsed = result.parsed ?? result; // supports either shape
-              const hasScore = Number.isFinite(parsed?.score);
-              return hasScore ? (
-                <>
-                  <div>
-                    <b>Score:</b> {parsed.score}/100
-                  </div>
-                  <div>
-                    <b>Recognized:</b> {parsed.recognized ?? "—"}
-                  </div>
-                  <div>
-                    <b>Feedback:</b> {parsed.feedback ?? "—"}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ marginBottom: 6 }}>
-                    Couldn’t parse JSON — showing raw response:
-                  </div>
-                </>
-              );
-            })()}
-
-            {/* Always show raw output for debugging */}
-            <pre
-              style={{
-                marginTop: 8,
-                whiteSpace: "pre-wrap",
-                maxHeight: 260,
-                overflow: "auto",
-              }}
+      
+      
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
             >
-              {typeof result === "string"
-                ? result
-                : result.raw ?? JSON.stringify(result, null, 2)}
-            </pre>
+              <X className="w-5 h-5 cursor-pointer" />
+            </button>
+
+            {error ? (
+              <div className="text-red-600">
+                <b>Error:</b> {error}
+              </div>
+            ) : result?.parsed ? (
+              <>
+                <h2 className="text-lg font-bold mb-2">Result</h2>
+                <p>
+                  <b>Score:</b> {result.parsed.score}/100
+                </p>
+                <p>
+                  <b>Recognized:</b> {result.parsed.recognized ?? "—"}
+                </p>
+                <p>
+                  <b>Feedback:</b> {result.parsed.feedback ?? "—"}
+                </p>
+              </>
+            ) : (
+              <div>
+                Could not parse JSON. <br />
+                Raw response:
+                <pre className="mt-2 p-2 bg-gray-100 rounded text-sm max-h-40 overflow-auto">
+                  {result?.raw ?? "—"}
+                </pre>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
