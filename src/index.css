@@ -30,3 +30,9 @@ h3,
 p {
   color: var(--text);
 }
+
+th,
+td {
+  padding: 15px;
+  text-align: left;
+}
