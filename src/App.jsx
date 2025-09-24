@@ -86,6 +86,13 @@ function Navbar({ user, isLoading }) {
         </Link>
 
         <div className="flex items-center gap-4">
+          <Link to="/scoreboard" className="text-[var(--primary)] underline">
+            Scoreboard
+          </Link>
+          <Link to="/practice" className="text-[var(--primary)] underline">
+            Practice
+          </Link>
+
           {isLoading ? (
             <div className="w-6 h-6 border-2 border-gray-300 border-t-[var(--primary)] rounded-full animate-spin" />
           ) : user === null ? (

@@ -25,7 +25,7 @@ const HomePage = () => {
     setIsLoggedInWithUser();
   }, [])
   return (
-    <div className="min-h-screen pt-24 bg-[var(--secondary)]">
+    <div className="min-h-screen pt-24 bg-[var(--tertiary)]">
       {/* Hero Section */}
       <section
         className="container mx-auto px-6 py-24 md:text-left text-center w-full flex flex-col
