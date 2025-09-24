@@ -68,6 +68,7 @@ const ScoreBoardPage = () => {
           <table className="w-full">
             <thead className="bg-[var(--primary)] text-white">
               <tr>
+                <th>Rank</th>
                 <th>First name</th>
                 <th>Last name</th>
                 <th>Last played at</th>
@@ -83,6 +84,7 @@ const ScoreBoardPage = () => {
                       ? "bg-[var(--accent-secondary)]"
                       : ""
                 }>
+                  <td>{index + 1}</td>
                   <td>{user.first_name}</td>
                   <td>{user.last_name}</td>
                   <td>{user.last_played_at || "Never"}</td>
