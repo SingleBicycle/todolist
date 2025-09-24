@@ -77,6 +77,9 @@ function Navbar({ user, isLoading }) { // ✅ CHANGED: prop name is `isLoading` 
         </Link>
 
         <div className="flex items-center gap-4">
+          <Link to="/scoreboard" className="text-[var(--primary)] underline">
+            Scoreboard
+          </Link>
           <Link to="/practice" className="text-[var(--primary)] underline">
             Practice
           </Link>
