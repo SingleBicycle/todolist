@@ -15,3 +15,21 @@ export async function getCharacterById(characterid) {
     throw error;
   }
 }
+
+export async function getAllCharacters() {
+  try {
+    const snapshot = await getDocs(collection(db, "characters"));
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error("Error fetching characters:", error);
+    throw error;
+  }
+}
+
+
+export async function getRandomCharacter() {
+  const all = await getAllCharacters();
+  if (all.length === 0) return null;
+  const randomIndex = Math.floor(Math.random() * all.length);
+  return all[randomIndex];
+}

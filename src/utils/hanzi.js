@@ -14,7 +14,6 @@ export function testtHanziWriter(container, character) {
     showCharacter: false,
     strokeAnimationSpeed: 1.2,
     delayBetweenStrokes: 400,
-    
   });
 
   return writer;
