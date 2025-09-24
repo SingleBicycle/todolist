@@ -14,7 +14,8 @@
   --secondary: #6d97f1;
   --tertiary: #ebf2ff;
   --text: #111827;
-  --accent: #ea580c;
+  --accent-primary: #ea580c;
+  --accent-secondary: #f79a67;
 }
 
 button,

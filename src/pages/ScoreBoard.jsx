@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { getAllUsers } from '../firebase/database';
+import { getCurrentUser } from "../firebase/auth";
 
 const ScoreBoardPage = () => {
   const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const fetchedUsers = await getAllUsers();
+        const [fetchedCurrentUser, fetchedUsers] = await Promise.all([
+          getCurrentUser(),
+          getAllUsers()
+        ]);
 
         // Sort users by score in descending order
         const sortedUsers = fetchedUsers.sort((a, b) =>
@@ -18,6 +23,7 @@ const ScoreBoardPage = () => {
         );
 
         setUsers(sortedUsers);
+        setCurrentUser(fetchedCurrentUser);
         setIsLoading(false);
       } catch (err) {
         setError(err);
@@ -25,7 +31,7 @@ const ScoreBoardPage = () => {
       }
     };
 
-    fetchUsers();
+    fetchData();
   }, []);
 
   // Loading state
@@ -70,7 +76,13 @@ const ScoreBoardPage = () => {
             </thead>
             <tbody>
               {users.map((user, index) => (
-                <tr key={user.id}>
+                <tr 
+                  key={user.id} 
+                  className={
+                    currentUser && user.id === currentUser.uid
+                      ? "bg-[var(--accent-secondary)]"
+                      : ""
+                }>
                   <td>{user.first_name}</td>
                   <td>{user.last_name}</td>
                   <td>{user.last_played_at || "Never"}</td>
