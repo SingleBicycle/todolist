@@ -11,7 +11,8 @@
   -moz-osx-font-smoothing: grayscale;
 
   --primary: #2563eb;
-  --secondary: #ebf2ff;
+  --secondary: #6d97f1;
+  --tertiary: #ebf2ff;
   --text: #111827;
   --accent: #ea580c;
 }

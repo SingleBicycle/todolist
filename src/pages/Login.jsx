@@ -29,7 +29,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="!overflow-y-hidden min-h-screen bg-[var(--secondary)] flex items-center justify-center px-4">
+    <div className="!overflow-y-hidden min-h-screen bg-[var(--tertiary)] flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center pb-8">
           <h2 className="text-3xl font-bold pb-2">Welcome!</h2>

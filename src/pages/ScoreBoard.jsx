@@ -46,9 +46,9 @@ const ScoreBoardPage = () => {
       </h2>
 
       <div className="flex flex-col items-center justify-center">
-        <div className="w-80/100 bg-[var(--secondary)] rounded-md">
+        <div className="w-80/100 bg-[var(--tertiary)] rounded-md">
           <table className="w-full">
-            <thead className="bg-[var(--primary)]">
+            <thead className="bg-[var(--secondary)] rounded-md">
               <tr>
                 <th>First name</th>
                 <th>Last name</th>
