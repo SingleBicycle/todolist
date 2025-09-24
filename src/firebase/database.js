@@ -33,3 +33,10 @@ export async function getRandomCharacter() {
   const randomIndex = Math.floor(Math.random() * all.length);
   return all[randomIndex];
 }
+
+
+export async function getDifficultyCharacter(level) {
+  const diff = await getAllCharacters();
+  return diff.filter((char) => char.difficulty === level);
+
+}
