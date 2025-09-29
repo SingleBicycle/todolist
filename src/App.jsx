@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext, useRef } from "react";
 import HomePage from "./pages/Home";
 import LoginPage from "./pages/Login";
 import PlayPage from "./pages/Play";
+import ProfilePage from "./pages/Profile";
 import { LogOut } from "lucide-react";
 import ScoreBoardPage from "./pages/ScoreBoard";
 import { logout } from "./firebase/auth";
@@ -165,11 +166,12 @@ export default function App() {
       <div className="min-h-screen bg-white pt-[64px]">
         <Navbar user={user} isLoading={isLoading} />
 
-        <main>
+        <main className="mt-8">
           <Route path="/" component={HomePage} />
           <Route path="/login" component={LoginPage} />
           <Route path="/play" component={PlayPage} />
           <Route path="/scoreboard" component={ScoreBoardPage} />
+          <Route path="/profile" component={ProfilePage} />
         </main>
       </div>
     </Router>
