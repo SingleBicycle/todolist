@@ -86,13 +86,6 @@ function Navbar({ user, isLoading }) {
         </Link>
 
         <div className="flex items-center gap-4">
-          <Link to="/scoreboard" className="text-[var(--primary)] underline">
-            Scoreboard
-          </Link>
-          <Link to="/practice" className="text-[var(--primary)] underline">
-            Practice
-          </Link>
-
           {isLoading ? (
             <div className="w-6 h-6 border-2 border-gray-300 border-t-[var(--primary)] rounded-full animate-spin" />
           ) : user === null ? (
@@ -105,7 +98,7 @@ function Navbar({ user, isLoading }) {
           ) : (
             <div className="relative" ref={menuRef}>
               <div className="flex justify-center items-center gap-3">
-                <p className="font-semibold text-md -mb-2">{user.isGuest ? "Guest": "4534.4pts"}</p>
+                <p className="font-semibold text-md -mb-2">{user.isGuest ? "Guest" : "4534.4pts"}</p>
                 <div
                   onClick={() => setIsDroppedDown((prev) => !prev)}
                   className="cursor-pointer overflow-clip rounded-full shadow-md border !p-0 border-gray-200 w-12 h-12 flex items-center justify-center"
