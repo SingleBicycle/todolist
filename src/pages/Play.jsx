@@ -1,8 +1,21 @@
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { PlayCircle, X } from "lucide-react";
+import { testtHanziWriter } from "../firebase/hanzi";
 
-const WIDTH = 600;
-const HEIGHT = 650;
+const CWIDTH = 620;
+const CHEIGHT = 620;
+export { CWIDTH, CHEIGHT };
+const CHARACTERS = [
+  { char: "木", label: "木 (tree)" },
+  { char: "水", label: "水 (water)" },
+  { char: "火", label: "火 (fire)" },
+  { char: "土", label: "土 (earth)" },
+  { char: "日", label: "日 (sun)" },
+  { char: "月", label: "月 (moon)" },
+  { char: "人", label: "人 (person)" },
+  { char: "大", label: "大 (big)" },
+  { char: "小", label: "小 (small)" },
+];
 
 const PlayPage = () => {
   const [target, setTarget] = useState("木");
@@ -10,23 +23,36 @@ const PlayPage = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
   const canvasRef = useRef(null);
+  const writerRef = useRef(null);
   const ctxRef = useRef(null);
   const drawing = useRef(false);
   const last = useRef({ x: 0, y: 0 });
+  const containerRef = useRef(null);
 
   useEffect(() => {
     const c = canvasRef.current;
-    c.width = WIDTH;   // internal pixel width
-    c.height = HEIGHT; // internal pixel height
+    c.width = CWIDTH; // internal pixel width
+    c.height = CHEIGHT; // internal pixel height
     const ctx = c.getContext("2d", { willReadFrequently: true });
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, c.width, c.height);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineWidth = 9;
+    ctx.lineWidth = 12;
     ctx.strokeStyle = "#111827";
     ctxRef.current = ctx;
+
+    if (writerRef.current == null) {
+      writerRef.current = testtHanziWriter(containerRef.current, target);
+    }
+
+    return () => {
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
+        containerRef.current = null;
+      }
+      ctxRef.current = null;
+    };
   }, []);
 
   const getPos = (e) => {
@@ -63,17 +89,28 @@ const PlayPage = () => {
   const clearCanvas = () => {
     const c = canvasRef.current;
     const ctx = ctxRef.current;
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.clearRect(0, 0, c.width, c.height);
     setResult(null);
     setError(null);
   };
+  const animate = () => {
+    if (!writerRef.current) return;
 
-   const evaluate = async () => {
+    writerRef.current.hideCharacter(); // reset first
+    writerRef.current.animateCharacter({
+      onComplete: () => {
+        // hide after animation finishes
+        writerRef.current.hideCharacter();
+      },
+    });
+  };
+
+  const evaluate = async () => {
     try {
       setLoading(true);
       setError(null);
       setResult(null);
+
       const dataUrl = canvasRef.current.toDataURL("image/png");
 
       const res = await fetch("/api/eval-handwriting", {
@@ -91,97 +128,159 @@ const PlayPage = () => {
       }
 
       setResult({ parsed, raw: text });
-      setShowModal(true); // open modal
+      setShowModal(true);
+
       if (!res.ok) throw new Error(text);
     } catch (e) {
       setError(String(e));
-      setShowModal(true); // also open modal for errors
+      setShowModal(true);
     } finally {
+      clearCanvas();
       setLoading(false);
     }
   };
+  const handleCharacterChange = (e) => {
+    const newTarget = e.target.value;
+    setTarget(newTarget);
+    clearCanvas();
+    if (writerRef.current) {
+      writerRef.current.setCharacter(newTarget);
+    }
+  };
 
+  const handleDifficultyChange = (e) => {};
   return (
-    <div className="container px-6 m-auto pt-10  max-w-[600px] max-h-[650px]">
-      <div>
-      <p>Lets try the character: {target}</p>
-      </div>
-
-      <canvas
-
-        ref={canvasRef}
-        style={{ touchAction: "none" }}
-        className={`rounded-md border-2 border-gray-300 
-         w-full h-auto
-          ${loading ? "!cursor-not-allowed pointer-events-none opacity-50" : ""}`}
-        onMouseDown={down}
-        onMouseMove={move}
-        onMouseUp={up}
-        onMouseLeave={up}
-        onTouchStart={down}
-        onTouchMove={move}
-        onTouchEnd={up}
-      />
-      <div className="flex justify-between pt-3">
-      <button
-  disabled={loading}
-  onClick={clearCanvas}
-  className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md
-              ${loading ? "!cursor-not-allowed opacity-50" : ""}`}
->
-  Clear
-</button>
-
-<button
-  disabled={loading}
-  onClick={evaluate}
-  className={`bg-[var(--primary)] text-white !px-8 !rounded-md
-              ${loading ? "!cursor-not-allowed opacity-50" : ""}`}
->
-  {loading ? "Evaluating…" : "Evaluate"}
-</button>
-      </div>
-      
-      
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+    <div className="bg-[var(--tertiary)] w-full h-screen ">
+      <div className="container m-auto pt-10 max-w-[620px] max-h-[620px]">
+        <div className="flex justify-between pb-1">
+          <p className="text-lg">
+            Lets try a/an{" "}
+            <select
+              value={"Easy"}
+              onChange={handleDifficultyChange}
+              disabled={loading}
+              className={`pl-2 !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white
+                ${
+                  loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
             >
-              <X className="w-5 h-5 cursor-pointer" />
-            </button>
-
-            {error ? (
-              <div className="text-red-600">
-                <b>Error:</b> {error}
-              </div>
-            ) : result?.parsed ? (
-              <>
-                <h2 className="text-lg font-bold mb-2">Result</h2>
-                <p>
-                  <b>Score:</b> {result.parsed.score}/100
-                </p>
-                <p>
-                  <b>Recognized:</b> {result.parsed.recognized ?? "—"}
-                </p>
-                <p>
-                  <b>Feedback:</b> {result.parsed.feedback ?? "—"}
-                </p>
-              </>
-            ) : (
-              <div>
-                Could not parse JSON. <br />
-                Raw response:
-                <pre className="mt-2 p-2 bg-gray-100 rounded text-sm max-h-40 overflow-auto">
-                  {result?.raw ?? "—"}
-                </pre>
-              </div>
-            )}
-          </div>
+              {["Easy", "Med", "Hard"].map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>{" "}
+            character:
+            <select
+              value={target}
+              onChange={handleCharacterChange}
+              disabled={loading}
+              className={`pl-2 pr-0 py-1 rounded-md border-1 border-gray-300 bg-white
+                ${
+                  loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
+            >
+              {CHARACTERS.map((item) => (
+                <option key={item.char} value={item.char}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            !
+          </p>
+          <button
+            disabled={loading}
+            onClick={animate}
+            className={`bg-[var(--primary)] flex gap-2 text-white !px-3 !py-2 !rounded-md
+              ${loading ? "!cursor-not-allowed opacity-50" : ""}`}
+          >
+            <PlayCircle /> Animate
+          </button>
         </div>
-      )}
+
+        <div ref={containerRef} className="relative bg-white">
+          <canvas
+            width={CWIDTH}
+            height={CHEIGHT}
+            ref={canvasRef}
+            style={{ touchAction: "none" }}
+            className={`rounded-md m-auto !p-0 border-gray-300 border-dashed border-4 absolute top-0 !bg-transparent
+            ${
+              loading
+                ? "!cursor-not-allowed pointer-events-none opacity-50"
+                : ""
+            }
+          `}
+            onMouseDown={down}
+            onMouseMove={move}
+            onMouseUp={up}
+            onMouseLeave={up}
+            onTouchStart={down}
+            onTouchMove={move}
+            onTouchEnd={up}
+          />
+        </div>
+
+        <div className="flex justify-between pt-3">
+          <button
+            disabled={loading}
+            onClick={clearCanvas}
+            className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md
+              ${loading ? "!cursor-not-allowed opacity-50" : ""}`}
+          >
+            Clear
+          </button>
+
+          <button
+            disabled={loading}
+            onClick={evaluate}
+            className={`bg-[var(--primary)] text-white !px-8 !rounded-md
+              ${loading ? "!cursor-not-allowed opacity-50" : ""}`}
+          >
+            {loading ? "Evaluating…" : "Evaluate"}
+          </button>
+        </div>
+
+        {showModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+              <button
+                onClick={() => setShowModal(false)}
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5 cursor-pointer" />
+              </button>
+
+              {error ? (
+                <div className="text-red-600">
+                  <b>Error:</b> {error}
+                </div>
+              ) : result?.parsed ? (
+                <>
+                  <h2 className="text-lg font-bold mb-2">Result</h2>
+                  <p>
+                    <b>Score:</b> {result.parsed.score}/100
+                  </p>
+                  <p>
+                    <b>Recognized:</b> {result.parsed.recognized ?? "—"}
+                  </p>
+                  <p>
+                    <b>Feedback:</b> {result.parsed.feedback ?? "—"}
+                  </p>
+                </>
+              ) : (
+                <div>
+                  Could not parse JSON. <br />
+                  Raw response:
+                  <pre className="mt-2 p-2 bg-gray-100 rounded text-sm max-h-40 overflow-auto">
+                    {result?.raw ?? "—"}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
