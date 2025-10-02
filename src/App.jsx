@@ -15,13 +15,13 @@ const RouterContext = createContext();
 function Router({ children }) {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
-  const fetchApi = async () => {
-    const response = await axios.get("http://localhost:8080/api");
-    console.log(response.data.fruits);
-  };
+  // const fetchApi = async () => {
+  //   const response = await axios.get("http://localhost:8080/api");
+  //   console.log(response.data.fruits);
+  // };
 
   useEffect(() => {
-    fetchApi();
+    // fetchApi();
     const handlePopState = () => setCurrentPath(window.location.pathname);
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -98,7 +98,9 @@ function Navbar({ user, isLoading }) {
           ) : (
             <div className="relative" ref={menuRef}>
               <div className="flex justify-center items-center gap-3">
-                <p className="font-semibold text-md -mb-2">{user.isGuest ? "Guest" : "4534.4pts"}</p>
+                <p className="font-semibold text-md -mb-2">
+                  {user.isGuest ? "Guest" : "4534.4pts"}
+                </p>
                 <div
                   onClick={() => setIsDroppedDown((prev) => !prev)}
                   className="cursor-pointer overflow-clip rounded-full shadow-md border !p-0 border-gray-200 w-12 h-12 flex items-center justify-center"
@@ -143,7 +145,7 @@ export default function App() {
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
           email: firebaseUser.email,
-          isGuest: firebaseUser.displayName == null
+          isGuest: firebaseUser.displayName == null,
         });
       } else {
         setUser(null);

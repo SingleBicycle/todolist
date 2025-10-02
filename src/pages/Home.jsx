@@ -15,7 +15,6 @@ function FeatureCard({ icon, title, desc }) {
 }
 
 const HomePage = () => {
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   useEffect(() => {
     const setIsLoggedInWithUser = async () => {
@@ -23,7 +22,7 @@ const HomePage = () => {
       setIsLoggedIn(user != null);
     };
     setIsLoggedInWithUser();
-  }, [])
+  }, []);
   return (
     <div className="min-h-screen pt-24 bg-[var(--tertiary)]">
       {/* Hero Section */}
