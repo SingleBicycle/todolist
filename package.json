@@ -16,7 +16,8 @@
     "hanzi-writer": "^3.7.3",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

@@ -9,61 +9,15 @@ import { logout } from "./firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 import { auth } from "./firebase/config";
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 
 import axios from "axios";
-const RouterContext = createContext();
+// const RouterContext = createContext();
 
-function Router({ children }) {
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-
-  const fetchApi = async () => {
-    const response = await axios.get("http://localhost:8080/api");
-    console.log(response.data.fruits);
-  };
-
-  useEffect(() => {
-    fetchApi();
-    const handlePopState = () => setCurrentPath(window.location.pathname);
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  const navigate = (path) => {
-    window.history.pushState({}, "", path);
-    setCurrentPath(path);
-  };
-
-  return (
-    <RouterContext.Provider value={{ currentPath, navigate }}>
-      {children}
-    </RouterContext.Provider>
-  );
-}
-
-function Route({ path, component: Component }) {
-  const { currentPath } = useContext(RouterContext);
-  return currentPath === path ? <Component /> : null;
-}
-
-function Link({ to, children, className = "" }) {
-  const { navigate } = useContext(RouterContext);
-
-  const handleClick = (e) => {
-    e.preventDefault();
-    navigate(to);
-  };
-
-  return (
-    <a href={to} onClick={handleClick} className={className}>
-      {children}
-    </a>
-  );
-}
 
 function Navbar({ user, isLoading }) {
   // ✅ CHANGED: prop name is `isLoading` (was `isLoadingProfile`)
   const [isDroppedDown, setIsDroppedDown] = useState(false);
-  const { navigate } = useContext(RouterContext);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -155,20 +109,20 @@ export default function App() {
     return () => unsubscribe();
   }, []);
   return (
-    <Router>
+    <BrowserRouter>
       <div className="min-h-screen bg-white pt-[64px]">
         <Navbar user={user} isLoading={isLoading} />
 
         <main className="mt-8">
-          <Route path="/" component={HomePage} />
-          <Route path="/login" component={LoginPage} />
-          <Route path="/play" component={PlayPage} />
-          <Route path="/scoreboard" component={ScoreBoardPage} />
-          <Route path="/profile" component={ProfilePage} />
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/play" element={<PlayPage />} />
+            <Route path="/scoreboard" element={<ScoreBoardPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Routes>
         </main>
       </div>
-    </Router>
+    </BrowserRouter>
   );
 }
-
-export { Link, RouterContext };

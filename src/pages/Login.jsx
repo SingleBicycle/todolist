@@ -1,5 +1,5 @@
-import { RouterContext, Link } from "../App";
 import { useContext, useEffect, useState } from "react";
+import { Link, useNavigate } from 'react-router-dom';
 import {
   getCurrentUser,
   loginAnonymously,
@@ -8,7 +8,6 @@ import {
 } from "../firebase/auth";
 
 const LoginPage = () => {
-  const { navigate } = useContext(RouterContext);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
