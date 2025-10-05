@@ -1,12 +1,9 @@
 dist-ssr
 *.local
-<<<<<<< HEAD
 .venv
 
 scripts/private_key.json
-=======
 
->>>>>>> 40a1264b15428747bcb70edf52cfff5240ec3c3e
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

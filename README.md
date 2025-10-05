@@ -31,8 +31,4 @@ Run the backend with `npm run dev` inside the server folder.
 
 Run the frontend with `npm run dev` inside the root folder.
 
-<<<<<<< HEAD
 You can now visit the website at `localhost:5173`.
-=======
-You can now visit the website at `localhost:5173`.
->>>>>>> 40a1264b15428747bcb70edf52cfff5240ec3c3e
