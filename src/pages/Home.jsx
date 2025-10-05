@@ -1,5 +1,5 @@
 import { BookOpen, Smartphone, CheckSquare, Gift } from "lucide-react";
-import { Link } from "../App";
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "./Login";
 function FeatureCard({ icon, title, desc }) {
