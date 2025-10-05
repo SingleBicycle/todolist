@@ -1,5 +1,7 @@
 import { BookOpen, Smartphone, CheckSquare, Gift } from "lucide-react";
-import { Link } from "../App";
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "./Login";
 function FeatureCard({ icon, title, desc }) {
   return (
     <div className="bg-white backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 text-center hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
@@ -13,8 +15,16 @@ function FeatureCard({ icon, title, desc }) {
 }
 
 const HomePage = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  useEffect(() => {
+    const setIsLoggedInWithUser = async () => {
+      const user = await getCurrentUser();
+      setIsLoggedIn(user != null);
+    };
+    setIsLoggedInWithUser();
+  }, []);
   return (
-    <div className="min-h-screen pt-24 bg-[var(--secondary)]">
+    <div className="min-h-screen pt-24 bg-[var(--tertiary)]">
       {/* Hero Section */}
       <section
         className="container mx-auto px-6 py-24 md:text-left text-center w-full flex flex-col
@@ -32,7 +42,7 @@ const HomePage = () => {
             app.
           </p>
           <Link
-            to="/login"
+            to={isLoggedIn ? "/play" : "/login"}
             className=" bg-[var(--primary)] text-white shadow-md"
           >
             Learn now
@@ -83,7 +93,10 @@ const HomePage = () => {
         <p className="mb-8 !text-white">
           Start mastering Kanji & Chinese writing today!
         </p>
-        <Link className="bg-white text-[var(--primary)] px-8 py-3 rounded-2xl font-medium shadow-md hover:bg-background">
+        <Link
+          to={isLoggedIn ? "/play" : "/login"}
+          className="bg-white text-[var(--primary)] px-8 py-3 rounded-2xl font-medium shadow-md hover:bg-background"
+        >
           Get Started
         </Link>
       </section>

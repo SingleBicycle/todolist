@@ -1,5 +1,5 @@
-import { RouterContext, Link } from "../App";
 import { useContext, useEffect, useState } from "react";
+import { Link, useNavigate } from 'react-router-dom';
 import {
   getCurrentUser,
   loginAnonymously,
@@ -8,7 +8,6 @@ import {
 } from "../firebase/auth";
 
 const LoginPage = () => {
-  const { navigate } = useContext(RouterContext);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -29,7 +28,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="!overflow-y-hidden min-h-screen bg-[var(--secondary)] flex items-center justify-center px-4">
+    <div className="!overflow-y-hidden min-h-screen bg-[var(--tertiary)] flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center pb-8">
           <h2 className="text-3xl font-bold pb-2">Welcome!</h2>

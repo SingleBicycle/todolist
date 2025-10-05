@@ -1,18 +1,14 @@
 import HanziWriter from "hanzi-writer";
-
+import { CWIDTH, CHEIGHT } from "../pages/Play";
 export function testtHanziWriter(container, character) {
   if (!container) return null;
-
-  // Clear previous content
-  container.innerHTML = "";
-
   const writer = HanziWriter.create(container, character, {
-    width: 250,
-    height: 250,
+    width: CWIDTH,
+    height: CHEIGHT,
     padding: 20,
     showOutline: true,
     showCharacter: false,
-    strokeAnimationSpeed: 1.2,
+    strokeAnimationSpeed: 1.5,
     delayBetweenStrokes: 400,
   });
 
