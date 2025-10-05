@@ -12,8 +12,6 @@ import { auth } from "./firebase/config";
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 
 import axios from "axios";
-// const RouterContext = createContext();
-
 
 function Navbar({ user, isLoading }) {
   // ✅ CHANGED: prop name is `isLoading` (was `isLoadingProfile`)
