@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { PlayCircle, X } from "lucide-react";
-import { testtHanziWriter } from "../firebase/hanzi";
+import { testtHanziWriter } from "../utils/hanzi";
 
 const CWIDTH = 620;
 const CHEIGHT = 620;
