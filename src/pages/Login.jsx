@@ -9,7 +9,8 @@ import {
 
 const LoginPage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
+  const navigate = useNavigate();
+  
   useEffect(() => {
     const setIsLoggedInWithUser = async () => {
       const user = await getCurrentUser();
