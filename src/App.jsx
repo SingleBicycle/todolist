@@ -18,6 +18,8 @@ function Navbar({ user, isLoading }) {
   const [isDroppedDown, setIsDroppedDown] = useState(false);
   const menuRef = useRef(null);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
