@@ -8,7 +8,7 @@ export function testtHanziWriter(container, character) {
     padding: 20,
     showOutline: true,
     showCharacter: false,
-    strokeAnimationSpeed: 1.5,
+    strokeAnimationSpeed: 2,
     delayBetweenStrokes: 400,
   });
 
