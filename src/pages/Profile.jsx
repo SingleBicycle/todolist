@@ -79,10 +79,15 @@ if (currentUser === null) {
           
 
           <p className="p-12">
+            <table>
+              <tr>
+                <td>Email</td>
+                <td>{currentUser.email}</td>
+              </tr>
+                <td>UID</td>
+                <td>{currentUser.uid}</td>
+            </table>
 
-            email: {currentUser.email}
-
-            uid: {currentUser.uid}
           </p>
 
         </div>
