@@ -71,6 +71,11 @@ function Navbar({ user, isLoading }) {
               {isDroppedDown && (
                 <div className="absolute shadow-md rounded-lg ml-3 mt-3 bg-white">
                   <button
+                    onClick={()=>navigate("/profile")}
+                    className="flex items-center text-sm text-gray-700 !px-6 !rounded-lg text-nowrap hover:bg-gray-50"
+                  >Profile
+                  </button>
+                  <button
                     onClick={async () => {
                       const { success } = await logout();
                       if (success) navigate("/");
