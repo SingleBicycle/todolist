@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import HomePage from "./pages/Home";
 import LoginPage from "./pages/Login";
 import PlayPage from "./pages/Play";
@@ -9,12 +9,15 @@ import { logout } from "./firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 import { auth } from "./firebase/config";
-import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
-
-import axios from "axios";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link,
+  useNavigate,
+} from "react-router-dom";
 
 function Navbar({ user, isLoading }) {
-  // ✅ CHANGED: prop name is `isLoading` (was `isLoadingProfile`)
   const [isDroppedDown, setIsDroppedDown] = useState(false);
   const menuRef = useRef(null);
 
@@ -115,7 +118,7 @@ export default function App() {
       <div className="min-h-screen bg-white pt-[64px]">
         <Navbar user={user} isLoading={isLoading} />
 
-        <main className="mt-8">
+        <main>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
