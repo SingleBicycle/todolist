@@ -1,5 +1,5 @@
 import { BookOpen, Smartphone, CheckSquare, Gift } from "lucide-react";
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "./Login";
 function FeatureCard({ icon, title, desc }) {
@@ -45,13 +45,13 @@ const HomePage = () => {
             to={isLoggedIn ? "/play" : "/login"}
             className=" bg-[var(--primary)] text-white shadow-md"
           >
-            Learn now
+            Play now
           </Link>
           <Link
             to={"/scoreboard"}
             className="ml-8 bg-[var(--primary)] text-white shadow-md"
           >
-            Scoreboard
+            See scoreboard
           </Link>
         </div>
         <div className="flex justify-center md:w-1/3 lg:w-1/2 min-h-72">
