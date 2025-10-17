@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { PlayCircle, X } from "lucide-react";
 import { testtHanziWriter } from "../utils/hanzi";
 import { getCurrentUser } from "./Login";
 import {
   getCharacterById,
   getDifficultyCharacter,
   getUserById,
+  updateUser,
 } from "../firebase/database";
+import { PlayCircle, X } from "lucide-react";
 
 const CWIDTH = 620;
 const CHEIGHT = 620;
 export { CWIDTH, CHEIGHT };
 
+const POINTS_PER_WORD_PER_DIFFICULTY = 30;
+const SCORE_THRES = 70;
 const DIFFICULTIES = {
   1: "Easy",
   2: "Okay",
@@ -32,10 +35,15 @@ const canvasHasInk = (canvas) => {
   return false;
 };
 
-const PlayPage = () => {
-  const [target, setTarget] = useState("");
-  const [difficulty, setDifficulty] = useState(1);
-  const [characters, setCharacters] = useState([]);
+const PlayPage = ({ updateNavScore }) => {
+  const [charData, setCharData] = useState({
+    id: "",
+    content: "",
+    difficulty: 1,
+    characters: {},
+  });
+
+  const dbUserRef = useRef({});
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -50,7 +58,7 @@ const PlayPage = () => {
   const last = useRef({ x: 0, y: 0 });
   const initialized = useRef(false);
 
-  // Initialize user data and load first character (runs once on mount)
+  // Initialize user data and load first character (init only ran once)
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -58,26 +66,37 @@ const PlayPage = () => {
         const user = await getCurrentUser();
         let selectedDifficulty = 1;
         let selectedTarget = "";
+        let selectedTargetId = "";
 
         if (user?.uid) {
           // Authorized user
           const dbUser = await getUserById(user.uid);
+          dbUserRef.current = dbUser;
+
           if (dbUser?.last_word) {
             const lastCharacter = await getCharacterById(dbUser.last_word);
+
             if (lastCharacter) {
               selectedDifficulty = lastCharacter.difficulty;
               selectedTarget = lastCharacter.content;
+              selectedTargetId = dbUser.last_word;
             }
           }
         }
 
         // Load characters for the selected difficulty
-        let chars = await getDifficultyCharacter(selectedDifficulty);
-        chars = chars.map((char) => char.content);
+        const chars = await getDifficultyCharacter(selectedDifficulty);
         if (chars && chars.length > 0) {
-          setCharacters(chars);
-          setDifficulty(selectedDifficulty);
-          setTarget(selectedTarget || chars[0]);
+          setCharData((prev) => ({
+            ...prev,
+            id: selectedTargetId,
+            content: selectedTarget,
+            difficulty: selectedDifficulty,
+            characters: chars.reduce((acc, char) => {
+              acc[char.id] = char.content;
+              return acc;
+            }, {}),
+          }));
         } else {
           setError("No characters available for this difficulty");
           setShowModal(true);
@@ -92,13 +111,15 @@ const PlayPage = () => {
       }
     };
 
-    init();
+    if (!initialized.current) {
+      init();
+    }
   }, []);
 
   // Initialize canvas context (runs once)
   useEffect(() => {
     const c = canvasRef.current;
-    if (!c || ctxRef.current) return;
+    if (!c || ctxRef.current || initialized.current) return;
 
     c.width = CWIDTH;
     c.height = CHEIGHT;
@@ -112,49 +133,13 @@ const PlayPage = () => {
 
   // Update HanziWriter when target changes
   useEffect(() => {
-    if (!writerContainerRef.current || !target) return;
+    if (!writerContainerRef.current || !charData.content) return;
 
-    // Clean up existing writer
-    if (writerRef.current) {
-      writerContainerRef.current.innerHTML = "";
-      writerRef.current = null;
-    }
-
-    // Create new writer
-    writerRef.current = testtHanziWriter(writerContainerRef.current, target);
-
-    return () => {
-      if (writerContainerRef.current) {
-        writerContainerRef.current.innerHTML = "";
-      }
-      writerRef.current = null;
-    };
-  }, [target]);
-
-  // Load characters when difficulty changes (skip on initial mount)
-  useEffect(() => {
-    if (!initialized.current) return;
-
-    const loadChars = async () => {
-      try {
-        let chars = await getDifficultyCharacter(difficulty);
-        if (chars && chars.length > 0) {
-          chars = chars.map((char) => char.content);
-          setCharacters(chars);
-          // If current target is not in new difficulty, switch to first character
-          if (!chars.includes(target)) {
-            setTarget(chars[0]);
-          }
-        }
-      } catch (err) {
-        console.error("Error loading characters:", err);
-        setError(String(err));
-        setShowModal(true);
-      }
-    };
-
-    loadChars();
-  }, [difficulty]);
+    writerRef.current = testtHanziWriter(
+      writerContainerRef.current,
+      charData.content
+    );
+  }, [charData.content]);
 
   const [showGrid, setShowGrid] = useState(false);
   const gridRef = useRef(null);
@@ -166,13 +151,20 @@ const PlayPage = () => {
         setShowGrid(false);
       }
     };
-
+    let ignoreOnce = false;
+    const guard = (e) => {
+      if (ignoreOnce) {
+        ignoreOnce = false;
+        return;
+      }
+      handleClickOutside(e);
+    };
     if (showGrid) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("mousedown", guard);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("mousedown", guard);
     };
   }, [showGrid]);
 
@@ -228,6 +220,28 @@ const PlayPage = () => {
       onComplete: () => writerRef.current.hideCharacter(),
     });
   };
+  const updatePoints = async () => {
+    if (
+      dbUserRef.current?.id &&
+      Array.isArray(dbUserRef.current.completed_words)
+    ) {
+      if (!dbUserRef.current.completed_words.includes(charData.id)) {
+        await updateUser(dbUserRef.current.id, {
+          points:
+            (dbUserRef.current.points || 0) +
+            charData.difficulty * POINTS_PER_WORD_PER_DIFFICULTY,
+          completed_words: [...dbUserRef.current.completed_words, charData.id],
+          last_word: charData.id,
+        });
+        updateNavScore(
+          (dbUserRef.current.points || 0) +
+            charData.difficulty * POINTS_PER_WORD_PER_DIFFICULTY
+        );
+
+        dbUserRef.current = await getUserById(dbUserRef.current.id);
+      }
+    }
+  };
 
   const evaluate = async () => {
     try {
@@ -242,11 +256,10 @@ const PlayPage = () => {
       }
 
       const dataUrl = canvasRef.current.toDataURL("image/png");
-      console.log(dataUrl);
       const res = await fetch("/api/eval-handwriting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl, target }),
+        body: JSON.stringify({ image: dataUrl, target: charData.content }),
       });
 
       const text = await res.text();
@@ -267,6 +280,9 @@ const PlayPage = () => {
         return;
       }
 
+      if (parsed.score >= SCORE_THRES) {
+        updatePoints();
+      }
       setResult({ parsed, raw: text });
       setShowModal(true);
     } catch (e) {
@@ -277,22 +293,104 @@ const PlayPage = () => {
       setLoading(false);
     }
   };
+  const handleNextCharacter = async () => {
+    setLoading(true);
+    setShowModal(false);
 
-  const handleCharacterChange = (char) => {
-    setTarget(char);
+    try {
+      const completed = dbUserRef.current?.completed_words ?? [];
+      const chars = await getDifficultyCharacter(charData.difficulty);
+      const ids = chars.map((c) => c.id);
+      const currentIdx = ids.indexOf(charData.id);
+
+      let nextId = null;
+      for (let i = 1; i <= ids.length; i++) {
+        const idx = (currentIdx + i) % ids.length;
+        if (!completed.includes(ids[idx])) {
+          nextId = ids[idx];
+          break;
+        }
+      }
+
+      if (nextId) {
+        handleCharacterChange(nextId);
+        setLoading(false);
+        return;
+      }
+
+      const all = [];
+      for (const { key } of SORTED_DIFFICULTIES) {
+        const diffChars = await getDifficultyCharacter(key);
+        diffChars.forEach((c) => all.push({ ...c, difficulty: key }));
+      }
+
+      const currentGlobalIndex = all.findIndex((c) => c.id === charData.id);
+
+      let nextGlobalIndex = -1;
+      for (let i = 1; i <= all.length; i++) {
+        const idx = (currentGlobalIndex + i) % all.length;
+        if (!completed.includes(all[idx].id)) {
+          nextGlobalIndex = idx;
+          break;
+        }
+      }
+
+      const target = nextGlobalIndex === -1 ? all[0] : all[nextGlobalIndex];
+
+      if (target.difficulty !== charData.difficulty) {
+        await handleDifficultyChange(DIFFICULTIES[target.difficulty]);
+      } else {
+        handleCharacterChange(target.id);
+      }
+    } catch (err) {
+      console.error("Next-character error:", err);
+      setError(String(err));
+      setShowModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCharacterChange = (charId) => {
+    setCharData((prev) => ({
+      ...prev,
+      id: charId,
+      content: prev.characters[charId],
+    }));
     clearDrawing();
     setShowGrid(false);
   };
 
-  const handleDifficultyChange = (e) => {
-    const selectedLabel = e.target.value;
+  const handleDifficultyChange = async (newLevel) => {
+    setLoading(true);
     const difficultyEntry = SORTED_DIFFICULTIES.find(
-      (d) => d.label === selectedLabel
+      (d) => d.label === newLevel
     );
-    if (difficultyEntry) {
-      setDifficulty(difficultyEntry.key);
-      clearDrawing();
+    if (difficultyEntry.key != charData.difficulty) {
+      try {
+        const chars = await getDifficultyCharacter(difficultyEntry.key);
+
+        if (chars && chars.length > 0) {
+          setCharData((prev) => ({
+            ...prev,
+            id: chars[0].id,
+            content: chars[0].content,
+            difficulty: difficultyEntry.key,
+            characters: chars.reduce((acc, char) => {
+              acc[char.id] = char.content;
+              return acc;
+            }, {}),
+          }));
+        }
+      } catch (err) {
+        console.error("Error loading characters:", err);
+        setError(String(err));
+        setShowModal(true);
+      }
+
+      resetAll();
     }
+    setLoading(false);
   };
 
   return (
@@ -302,8 +400,10 @@ const PlayPage = () => {
           <div className="text-lg flex gap-2 items-center text-[var(--text)]">
             Let's try a/an{" "}
             <select
-              value={DIFFICULTIES[difficulty]}
-              onChange={handleDifficultyChange}
+              value={DIFFICULTIES[charData.difficulty]}
+              onChange={(e) => {
+                handleDifficultyChange(e.target.value);
+              }}
               disabled={loading}
               className={`pl-2 !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white ${
                 loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
@@ -324,7 +424,7 @@ const PlayPage = () => {
                   loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
                 }`}
               >
-                {target || ""}
+                {charData.content || ""}
               </button>
 
               {showGrid && (
@@ -333,24 +433,32 @@ const PlayPage = () => {
                   className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-10"
                 >
                   <div className="grid grid-cols-6 gap-2 w-md">
-                    {characters.map((char, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleCharacterChange(char)}
-                        disabled={loading}
-                        className={`!p-0 text-xl font-bold rounded-sm border-1 transition-all ${
-                          target === char
-                            ? "border-blue-600 bg-blue-50 text-blue-600"
-                            : "border-gray-300 bg-white text-gray-800 hover:border-blue-400 hover:bg-blue-50"
-                        } ${
-                          loading
-                            ? "cursor-not-allowed opacity-50"
-                            : "cursor-pointer"
-                        }`}
-                      >
-                        {char}
-                      </button>
-                    ))}
+                    {Object.entries(charData.characters).map(
+                      ([id, content], index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleCharacterChange(id)}
+                          disabled={loading}
+                          className={`relative !p-0 text-xl font-bold rounded-sm border-1 transition-all ${
+                            charData.id === id
+                              ? "border-blue-600 bg-blue-50 text-blue-600"
+                              : "border-gray-300 bg-white text-gray-800 hover:border-blue-400 hover:bg-blue-50"
+                          } ${
+                            loading
+                              ? "cursor-not-allowed opacity-50"
+                              : "cursor-pointer"
+                          }`}
+                        >
+                          {content}
+                          {/* ✅ Tiny checkmark badge */}
+                          {dbUserRef.current?.completed_words.includes(id) && (
+                            <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 bg-green-500 text-white text-[10px] rounded-full w-3 h-3 flex items-center justify-center shadow">
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -425,7 +533,7 @@ const PlayPage = () => {
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute top-2 right-0 text-gray-500 hover:text-gray-700"
+                className="absolute top-2 -right-3 text-gray-500 hover:text-gray-700"
               >
                 <X className="w-5 h-5 cursor-pointer" />
               </button>
@@ -435,21 +543,52 @@ const PlayPage = () => {
                   <b>Error:</b> {error}
                 </div>
               ) : result?.parsed ? (
-                <>
-                  <h2 className="text-lg font-bold mb-2">Result</h2>
-                  <p>
-                    <b>Score:</b>{" "}
-                    {Number.isFinite(result.parsed.score)
-                      ? `${result.parsed.score}/100`
-                      : "—"}
-                  </p>
-                  <p>
-                    <b>Recognized:</b> {result.parsed.recognized ?? "—"}
-                  </p>
-                  <p>
-                    <b>Feedback:</b> {result.parsed.feedback ?? "—"}
-                  </p>
-                </>
+                <div
+                  className="space-y-3
+                "
+                >
+                  <div>
+                    <h2 className="text-lg font-bold">Result:</h2>
+                  </div>
+                  <div>
+                    <p>
+                      <b>Score:</b>{" "}
+                      {Number.isFinite(result.parsed.score)
+                        ? `${result.parsed.score}/100`
+                        : "—"}
+                    </p>
+                    <p>
+                      <b>Recognized:</b> {result.parsed.recognized ?? "—"}
+                    </p>
+                    <p>
+                      <b>Feedback:</b> {result.parsed.feedback ?? "—"}
+                    </p>
+                  </div>
+
+                  <div className="w-full flex justify-between items-center gap-3">
+                    <button
+                      disabled={loading}
+                      onClick={() => {
+                        setShowModal(false);
+                        resetAll();
+                      }}
+                      className={`bg-[var(--primary)] text-white !px-8 !rounded-md ${
+                        loading ? "!cursor-not-allowed opacity-50" : ""
+                      }`}
+                    >
+                      Try again
+                    </button>
+                    <button
+                      disabled={loading}
+                      onClick={handleNextCharacter}
+                      className={`bg-[var(--primary)] text-white !px-8 !rounded-md ${
+                        loading ? "!cursor-not-allowed opacity-50" : ""
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div>
                   Could not parse JSON. <br />

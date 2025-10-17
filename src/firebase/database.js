@@ -1,5 +1,12 @@
-import { collection, doc, addDoc, getDoc, updateDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
-import { db } from './config'; 
+import {
+  collection,
+  doc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+} from "firebase/firestore";
+import { db } from "./config";
 
 // ------------------
 // Users
@@ -10,17 +17,17 @@ import { db } from './config';
 // Read
 async function getUserById(uid) {
   try {
-    const userDoc = await getDoc(doc(db, 'users', uid));
+    const userDoc = await getDoc(doc(db, "users", uid));
     if (userDoc.exists()) {
       return {
-        id: userDoc.id, 
-        ...userDoc.data() 
+        id: userDoc.id,
+        ...userDoc.data(),
       };
     } else {
       return null;
     }
   } catch (error) {
-    console.error('Error fetching user:', error);
+    console.error("Error fetching user:", error);
     throw error;
   }
 }
@@ -28,17 +35,17 @@ async function getUserById(uid) {
 async function getAllUsers() {
   try {
     // Fetch all documents from users collection
-    const querySnapshot = await getDocs(collection(db, 'users'));
+    const querySnapshot = await getDocs(collection(db, "users"));
 
     // Map documents to an array of user objects
-    const users = querySnapshot.docs.map(doc => ({
+    const users = querySnapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
 
     return users;
   } catch (error) {
-    console.error('Error fetching all users:', error);
+    console.error("Error fetching all users:", error);
     throw error;
   }
 }
@@ -46,13 +53,13 @@ async function getAllUsers() {
 // Update
 async function updateUser(uid, updateData) {
   try {
-    const userRef = doc(db, 'users', uid);
+    const userRef = doc(db, "users", uid);
     await updateDoc(userRef, {
-      ...updateData
+      ...updateData,
     });
-    return true; 
+    return true;
   } catch (error) {
-    console.error('Error updating user:', error);
+    console.error("Error updating user:", error);
     throw error;
   }
 }
@@ -60,11 +67,11 @@ async function updateUser(uid, updateData) {
 // Delete
 async function deleteUser(uid) {
   try {
-    const userRef = doc(db, 'users', uid);
+    const userRef = doc(db, "users", uid);
     await deleteDoc(userRef);
     return true;
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error("Error deleting user:", error);
     throw error;
   }
 }
@@ -97,7 +104,6 @@ export async function getAllCharacters() {
   }
 }
 
-
 export async function getRandomCharacter() {
   const all = await getAllCharacters();
   if (all.length === 0) return null;
@@ -105,11 +111,9 @@ export async function getRandomCharacter() {
   return all[randomIndex];
 }
 
-
 export async function getDifficultyCharacter(level) {
   const diff = await getAllCharacters();
   return diff.filter((char) => char.difficulty === level);
-
 }
 
 export { getUserById, getAllUsers, updateUser, deleteUser };
