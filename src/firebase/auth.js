@@ -4,7 +4,7 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "./config";
 
 // Create user profile if it doesn't exist yet
@@ -12,7 +12,7 @@ import { auth, db, googleProvider } from "./config";
 const createUserProfile = async (user) => {
   if (!user) return null;
 
-  const userRef = doc(db, 'users', user.uid);
+  const userRef = doc(db, "users", user.uid);
   const date = new Date();
   const timestamp = Math.floor(date.getTime() / 1000);
 
@@ -22,31 +22,31 @@ const createUserProfile = async (user) => {
 
     if (!userSnap.exists()) {
       // Create new user profile with default values if user does not exist
-      console.log("User does not exist, creating profile for " + user.email)
+      console.log("User does not exist, creating profile for " + user.email);
       await setDoc(userRef, {
-        email: user.email || '',
-        first_name: user.displayName ? user.displayName.split(' ')[0] : '',
-        last_name: user.displayName ? user.displayName.split(' ')[1] || '' : '',
+        email: user.email || "",
+        first_name: user.displayName ? user.displayName.split(" ")[0] : "",
+        last_name: user.displayName ? user.displayName.split(" ")[1] || "" : "",
         is_admin: false,
         points: 0,
-        last_word: "f5OY6xCdf4LCGkbjIHMj",  // default to 1 as the last word: 一
+        last_word: "f8RFmT84ejlJTKKrnMVh", // default to 1 as the last word: 一
         completed_words: [],
         is_on_random_mode: false,
         last_login_at: timestamp,
         last_played_at: null,
-        created_at: timestamp
+        created_at: timestamp,
       });
     } else {
       // Update last login time for existing users
-      console.log("User exists, updating last login timestamp")
+      console.log("User exists, updating last login timestamp");
       await updateDoc(userRef, {
-        last_login_at: timestamp
+        last_login_at: timestamp,
       });
     }
 
     return (await getDoc(userRef)).data();
   } catch (error) {
-    console.error('Error creating/updating user profile:', error);
+    console.error("Error creating/updating user profile:", error);
     return null;
   }
 };
@@ -111,4 +111,10 @@ const logout = async () => {
   return null;
 };
 
-export { createUserProfile, getCurrentUser, logout, loginAnonymously, loginWithGoogle };
+export {
+  createUserProfile,
+  getCurrentUser,
+  logout,
+  loginAnonymously,
+  loginWithGoogle,
+};
