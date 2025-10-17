@@ -89,7 +89,8 @@ function Navbar({ user, isLoading, score }) {
                     "Guest"
                   ) : (
                     <span>
-                      <AnimatedCounter value={score} /> pts
+                      {score == 0 ? score : <AnimatedCounter value={score} />}
+                      pts
                     </span>
                   )}
                 </p>
@@ -136,21 +137,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [isLoading, setLoading] = useState(true);
 
+  const [score, setScore] = useState(0);
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          email: firebaseUser.email,
-          isGuest: firebaseUser.displayName == null,
-        });
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-
     const fetchInitialScore = async () => {
       const user = await getCurrentUser();
 
@@ -161,9 +149,24 @@ export default function App() {
     };
 
     fetchInitialScore();
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          email: firebaseUser.email,
+          isGuest: firebaseUser.displayName == null,
+        });
+        fetchInitialScore();
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
     return () => unsubscribe();
   }, []);
-  const [score, setScore] = useState(0);
 
   return (
     <BrowserRouter>
