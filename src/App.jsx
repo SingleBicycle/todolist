@@ -4,6 +4,7 @@ import LoginPage from "./pages/Login";
 import PlayPage from "./pages/Play";
 import NotFoundPage from "./pages/NotFound"
 import ProfilePage from "./pages/Profile";
+import ProfileEditPage from "./pages/ProfileEdit"
 import { LogOut } from "lucide-react";
 import ScoreBoardPage from "./pages/ScoreBoard";
 import { logout } from "./firebase/auth";
@@ -36,7 +37,7 @@ function Navbar({ user, isLoading }) {
       <div className="container mx-auto py-3 px-6 flex justify-between items-center w-full">
         <Link
           to="/"
-          className="!px-0 text-2xl !font-bold text-[var(--primary)]"
+          className="!px-0 text-2xl !font-bold text-[var(--primary)] hover:text-[var(--accent-primary)] transition-all duration-200 ease-in-out"
         >
           {import.meta.env.VITE_APP_NAME}
         </Link>
@@ -72,7 +73,7 @@ function Navbar({ user, isLoading }) {
               {isDroppedDown && (
                 <div className="absolute shadow-md rounded-lg ml-3 mt-3 bg-white">
                   <button
-                    onClick={()=>navigate("/profile/" + user.uid)}
+                    onClick={()=>navigate(`/profile/${user.uid}`)}
                     className="flex items-center text-sm text-gray-700 !px-6 !rounded-lg text-nowrap hover:bg-gray-50"
                   >Profile
                   </button>
@@ -129,6 +130,7 @@ export default function App() {
             <Route path="/play" element={<PlayPage />} />
             <Route path="/scoreboard" element={<ScoreBoardPage />} />
             <Route path="/profile/:uid" element={<ProfilePage />} />
+            <Route path="/profile/:uid/edit" element={<ProfileEditPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>

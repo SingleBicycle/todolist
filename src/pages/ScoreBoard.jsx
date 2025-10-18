@@ -88,7 +88,7 @@ const ScoreBoardPage = () => {
                   } 
                   cursor-pointer
                   onClick = {() => {
-                    navigate("/profile/" + user.id)
+                    navigate(`/profile/${user.id}`)
                   }}
                 >
                   <td>{index + 1}</td>

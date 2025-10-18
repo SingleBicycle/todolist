@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../firebase/auth";
 import { getUserById } from "../firebase/database";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const { uid } = useParams();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,17 +69,28 @@ if (user === null) {
       <div className="flex flex-col items-center justify-center">
         <div className="w-80/100 bg-[var(--tertiary)] rounded-md">
 
-          <div className="p-12 flex flex-row items-center">
-            <img 
-              className="pr-8"
-              src={user.photo_url}
-              alt="Profile image" 
-              referrerPolicy="no-referrer"
-            />
-            <h2 className="text-4xl font-bold">
-              {user.first_name} {user.last_name}
-            </h2>
+          <div className="p-12 flex flex-row items-center justify-between">
+            <div className="flex flex-row items-center">
+              <img
+                className="pr-8"
+                src={user.photo_url}
+                alt="Profile image"
+                referrerPolicy="no-referrer"
+              />
+              <h2 className="text-4xl font-bold">
+                {user.first_name} {user.last_name}
+              </h2>
+            </div>
+            <button
+              className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+              onClick={() => {
+                navigate(`/profile/${uid}/edit`)
+              }}
+            >
+              Edit profile
+            </button>
           </div>
+
           
 
           <div className="p-12">
