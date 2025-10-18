@@ -78,7 +78,7 @@ if (user === null) {
                 referrerPolicy="no-referrer"
               />
               <h2 className="text-4xl font-bold">
-                {user.first_name} {user.last_name}
+                {user.username || "No username"}
               </h2>
             </div>
             <button
@@ -96,6 +96,14 @@ if (user === null) {
           <div className="p-12">
             <table>
               <tbody>
+                <tr>
+                  <td>First name</td>
+                  <td>{user.first_name}</td>
+                </tr>
+                <tr>
+                  <td>Last name</td>
+                  <td>{user.last_name}</td>
+                </tr>
                 <tr>
                   <td>Email</td>
                   <td>{user.email}</td>
