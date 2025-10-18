@@ -25,6 +25,7 @@ const createUserProfile = async (user) => {
       console.log("User does not exist, creating profile for " + user.email);
       await setDoc(userRef, {
         email: user.email || "",
+        photo_url: user.photoURL,
         first_name: user.displayName ? user.displayName.split(" ")[0] : "",
         last_name: user.displayName ? user.displayName.split(" ")[1] || "" : "",
         is_admin: false,
@@ -37,10 +38,11 @@ const createUserProfile = async (user) => {
         created_at: timestamp,
       });
     } else {
-      // Update last login time for existing users
-      console.log("User exists, updating last login timestamp");
+      // Update existing fields
+      console.log("User exists, updating last login timestamp")
       await updateDoc(userRef, {
-        last_login_at: timestamp,
+        photo_url: user.photoURL,
+        last_login_at: timestamp
       });
     }
 

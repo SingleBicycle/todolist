@@ -43,13 +43,13 @@ const HomePage = () => {
           </p>
           <Link
             to={isLoggedIn ? "/play" : "/login"}
-            className=" bg-[var(--primary)] text-white shadow-md"
+            className="bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
           >
             Play now
           </Link>
           <Link
             to={"/scoreboard"}
-            className="ml-8 bg-[var(--primary)] text-white shadow-md"
+            className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
           >
             See scoreboard
           </Link>
