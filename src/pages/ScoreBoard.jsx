@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { getAllUsers } from '../firebase/database';
 import { getCurrentUser } from "../firebase/auth";
 
 const ScoreBoardPage = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,9 +83,14 @@ const ScoreBoardPage = () => {
                   key={user.id} 
                   className={
                     currentUser && user.id === currentUser.uid
-                      ? "bg-[var(--accent-secondary)]"
-                      : ""
-                }>
+                      ? "bg-[var(--accent-secondary)] hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+                      : "bg-[var(--tertiary)] hover:bg-[var(--secondary)] transition-all duration-200 ease-in-out"
+                  } 
+                  cursor-pointer
+                  onClick = {() => {
+                    navigate("/profile/" + user.id)
+                  }}
+                >
                   <td>{index + 1}</td>
                   <td>{user.first_name}</td>
                   <td>{user.last_name}</td>
