@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getCurrentUser } from "../firebase/auth";
 import { getUserById, updateUser } from "../firebase/database";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 
 const ProfileEditPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { uid } = useParams();
   const [formData, setFormData] = useState({
     username: "",
@@ -15,6 +16,8 @@ const ProfileEditPage = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const isFirstTimeSignIn = location.state?.firstTimeSignIn || false;
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -70,7 +73,11 @@ const ProfileEditPage = () => {
       await updateUser(uid, cleanedData);
 
       // Navigate back to profile or show success message
-      navigate(`/profile/${uid}`);
+      if (isFirstTimeSignIn) {
+        navigate("/play")
+      } else {
+        navigate(`/profile/${uid}`);
+      }
     } catch (err) {
       console.error('Update failed:', err);
       setError('Failed to update profile');
@@ -112,8 +119,18 @@ const ProfileEditPage = () => {
   // Users state
   return (
     <div className="text-[var(--text)] mt-8">
-      <h3 className="text-2xl font-bold text-center mb-20">
-        Edit Profile
+      <h3 className="flex items-center justify-center text-2xl font-bold text-center mb-20">
+        {isFirstTimeSignIn && (
+          <div className="w-80/100 center place-content-center p-8 bg-[var(--tertiary)]">
+            Please complete your profile to get started!
+          </div>
+        )}
+        {!isFirstTimeSignIn && (
+          <div>
+            Edit profile
+          </div>
+        )}
+        
       </h3>
 
       <div className="flex flex-col items-center justify-center">

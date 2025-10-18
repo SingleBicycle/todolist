@@ -6,6 +6,7 @@ import {
   loginWithGoogle,
   logout,
 } from "../firebase/auth";
+import { getUserById } from "../firebase/database";
 
 const LoginPage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -20,7 +21,18 @@ const LoginPage = () => {
   }, []);
   const handleGoogleSignIn = async () => {
     await loginWithGoogle();
-    navigate("/play");
+    const currentUser = await getCurrentUser();
+    const user = await getUserById(currentUser.uid);
+    if (user.username === undefined) {
+      navigate(`/profile/${user.uid}/edit`, {
+        state: {
+          firstTimeSignIn: true
+        }
+      })
+    } else {
+      navigate("/play");
+    }
+    
   };
 
   const handleGuestLogin = async () => {
