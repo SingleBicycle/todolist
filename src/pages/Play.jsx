@@ -97,6 +97,8 @@ const PlayPage = ({ updateNavScore }) => {
               return acc;
             }, {}),
           }));
+
+          console.log("set char");
         } else {
           setError("No characters available for this difficulty");
           setShowModal(true);
@@ -106,8 +108,8 @@ const PlayPage = ({ updateNavScore }) => {
         setError(String(err));
         setShowModal(true);
       } finally {
-        setLoading(false);
         initialized.current = true;
+        setLoading(false);
       }
     };
 

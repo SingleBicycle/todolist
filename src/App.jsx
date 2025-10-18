@@ -142,15 +142,14 @@ export default function App() {
   const [score, setScore] = useState(0);
   useEffect(() => {
     const fetchInitialScore = async () => {
-      const user = await getCurrentUser();
-
-      if (user?.uid) {
-        const savedScore = (await getUserById(user.uid)).points; // your async function
-        setScore(savedScore);
-      }
+      try {
+        const user = await getCurrentUser();
+        if (user?.uid) {
+          const savedScore = (await getUserById(user.uid))?.points ?? 0;
+          setScore(savedScore);
+        }
+      } catch (e) {}
     };
-
-    fetchInitialScore();
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -167,6 +166,8 @@ export default function App() {
       }
       setLoading(false);
     });
+
+    fetchInitialScore();
 
     return () => unsubscribe();
   }, []);
