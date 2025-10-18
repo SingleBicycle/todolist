@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext, useRef } from "react";
 import HomePage from "./pages/Home";
 import LoginPage from "./pages/Login";
 import PlayPage from "./pages/Play";
+import NotFoundPage from "./pages/NotFound"
 import ProfilePage from "./pages/Profile";
 import { LogOut } from "lucide-react";
 import ScoreBoardPage from "./pages/ScoreBoard";
@@ -126,7 +127,8 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/play" element={<PlayPage />} />
             <Route path="/scoreboard" element={<ScoreBoardPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/:uid" element={<ProfilePage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>
       </div>
