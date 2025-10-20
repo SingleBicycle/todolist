@@ -71,8 +71,7 @@ const ScoreBoardPage = () => {
             <thead className="bg-[var(--primary)] text-white">
               <tr>
                 <th>Rank</th>
-                <th>First name</th>
-                <th>Last name</th>
+                <th>Username</th>
                 <th>Last played at</th>
                 <th>Points</th>
               </tr>
@@ -92,8 +91,7 @@ const ScoreBoardPage = () => {
                   }}
                 >
                   <td>{index + 1}</td>
-                  <td>{user.first_name}</td>
-                  <td>{user.last_name}</td>
+                  <td>{user.username || "No username"}</td>
                   <td>{user.last_played_at || "Never"}</td>
                   <td>{user.points || 0}</td>
                 </tr>

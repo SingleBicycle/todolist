@@ -38,3 +38,19 @@ td {
   padding: 15px;
   text-align: left;
 }
+
+.form-group {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  padding-top: calc(var(--spacing) * 4)
+}
+
+.form-label {
+  padding: calc(var(--spacing) * 4);
+  font-weight: bold;
+}
+
+.form-input {
+  border-bottom: 1px solid var(--accent-primary);
+}
