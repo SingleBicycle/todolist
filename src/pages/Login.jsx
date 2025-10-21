@@ -24,7 +24,7 @@ const LoginPage = () => {
     const currentUser = await getCurrentUser();
     const user = await getUserById(currentUser.uid);
     if (user.username === undefined) {
-      navigate(`/profile/${user.uid}/edit`, {
+      navigate(`/profile/${user.id}/edit`, {
         state: {
           firstTimeSignIn: true
         }
