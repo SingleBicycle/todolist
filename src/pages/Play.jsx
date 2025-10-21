@@ -434,14 +434,14 @@ const PlayPage = ({ updateNavScore }) => {
                   ref={gridRef}
                   className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-10"
                 >
-                  <div className="grid grid-cols-6 gap-2 w-md">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 w-sm lg:w-md">
                     {Object.entries(charData.characters).map(
                       ([id, content], index) => (
                         <button
                           key={index}
                           onClick={() => handleCharacterChange(id)}
                           disabled={loading}
-                          className={`relative !p-0 text-xl font-bold rounded-sm border-1 transition-all ${
+                          className={`relative !p-0 !m-0 text-lg font-bold rounded-sm border-1 transition-all ${
                             charData.id === id
                               ? "border-blue-600 bg-blue-50 text-blue-600"
                               : "border-gray-300 bg-white text-gray-800 hover:border-blue-400 hover:bg-blue-50"
@@ -533,25 +533,16 @@ const PlayPage = ({ updateNavScore }) => {
         {showModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
-              <button
-                onClick={() => setShowModal(false)}
-                className="absolute top-2 -right-3 text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-5 h-5 cursor-pointer" />
-              </button>
-
               {error ? (
                 <div className="text-red-600">
                   <b>Error:</b> {error}
                 </div>
               ) : result?.parsed ? (
-                <div
-                  className="space-y-3
-                "
-                >
-                  <div>
-                    <h2 className="text-lg font-bold">Result:</h2>
+                <div className="space-y-3">
+                  <div className="flex justify-center p-6 text-8xl border-gray-300 border-dashed border-3 font-bold text-gray-800">
+                    {charData.content}
                   </div>
+
                   <div>
                     <p>
                       <b>Score:</b>{" "}
