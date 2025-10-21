@@ -1,9 +1,11 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import sharp from "sharp";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -24,7 +26,7 @@ const RETRY_MAX_TOKENS   = Number(process.env.GEN_RETRY_TOKENS) || 8192;
 const FEEDBACK_MAX       = Number(process.env.FEEDBACK_MAX_CHARS) || 220;
 const RETRY_FEEDBACK_MAX = Math.min(FEEDBACK_MAX, 180);
 
-// Use beta so camelCase config works
+// Google GenAI client (v1beta)
 const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY,
   apiVersion: "v1beta",
@@ -48,7 +50,18 @@ function tryParseJSON(s) {
   }
 }
 
-// Basic CJK single-char check
+// Extract text from @google/genai response
+function extractTextFromGC(gc) {
+  if (!gc) return "";
+  if (typeof gc.text === "string" && gc.text) return gc.text;
+  const cand = gc?.candidates?.[0];
+  if (cand?.content?.parts?.length) {
+    return cand.content.parts.map(p => (typeof p.text === "string" ? p.text : "")).join("");
+  }
+  return "";
+}
+
+// CJK single-char check
 function isSingleCJKChar(s) {
   if (!s || typeof s !== "string") return false;
   const chars = Array.from(s.trim());
@@ -58,7 +71,26 @@ function isSingleCJKChar(s) {
   return (cp >= 0x4E00 && cp <= 0x9FFF) || (cp >= 0x3400 && cp <= 0x4DBF) || (cp >= 0xF900 && cp <= 0xFAFF);
 }
 
-// Heuristic doodle detector for server-side safety caps
+// Minimal built-in glossary for common characters (short glosses)
+const GLOSS = Object.freeze({
+  "一": "one; horizontal stroke",
+  "丨": "vertical stroke",
+  "十": "ten; cross shape",
+  "人": "person; human",
+  "口": "mouth; opening",
+  "大": "big; great",
+  "小": "small; little",
+  "中": "middle; center",
+  "上": "up; above",
+  "下": "down; below",
+  "日": "sun; day",
+  "月": "moon; month",
+  "山": "mountain",
+  "水": "water",
+  "火": "fire",
+});
+
+// Doodle detector (server-side safety cap)
 function looksLikeDoodle(recognized) {
   const r = (recognized || "").toLowerCase();
   return (
@@ -69,34 +101,78 @@ function looksLikeDoodle(recognized) {
   );
 }
 
+// Estimate dominant stroke angle via simple PCA (0°=horizontal, 90°=vertical)
+async function estimateStrokeAngleFromDataURL(dataUrl) {
+  const m = dataUrl.match(/^data:(.+?);base64,(.*)$/);
+  if (!m) return null;
+  const buf = Buffer.from(m[2], "base64");
+  const img = sharp(buf).greyscale();
+  const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
+  const { width, height } = info; // channels=1 (greyscale)
+  if (!width || !height || !data?.length) return null;
+
+  // Global threshold (mean)
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) sum += data[i];
+  const mean = sum / data.length;
+  const thr = Math.max(0, Math.min(255, mean - 10));
+
+  const pts = [];
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const v = data[y * width + x];
+      if (v < thr) pts.push([x, y]);
+    }
+  }
+  if (pts.length < 50) return null;
+
+  // PCA on (x,y)
+  let mx = 0, my = 0;
+  for (const [x, y] of pts) { mx += x; my += y; }
+  mx /= pts.length; my /= pts.length;
+  let sxx = 0, syy = 0, sxy = 0;
+  for (const [x, y] of pts) {
+    const dx = x - mx, dy = y - my;
+    sxx += dx * dx; syy += dy * dy; sxy += dx * dy;
+  }
+  sxx /= pts.length; syy /= pts.length; sxy /= pts.length;
+  const theta = 0.5 * Math.atan2(2 * sxy, (sxx - syy)); // radians in [-π/2, π/2]
+  let deg = Math.abs(theta * 180 / Math.PI);            // [0, 90]
+  if (deg > 90) deg = 180 - deg;
+  return { angleDeg: deg, width, height, points: pts.length };
+}
+
+// Target-aware orientation rule
+function orientationMismatch(target, angleDeg) {
+  if (!Number.isFinite(angleDeg)) return false;
+  const t = (target || "").trim();
+  const H_TOL = 20; // horizontal tolerance
+  const V_TOL = 20; // vertical tolerance
+  if (t === "一") return angleDeg > H_TOL;                 // expect ~0°
+  if (t === "丨") return Math.abs(90 - angleDeg) > V_TOL;  // expect ~90°
+  return false;
+}
+
+// Final score logic with doodle + mismatch caps
 function computeFinalScore(parsed, target) {
   const targetChar = (target || "").trim();
   const rec = (parsed?.recognized || "").trim();
 
-  // If model supplies boolean, use it; else literal equality
   const modelMatch = parsed?.target_match === true;
   const literalMatch = targetChar && rec && rec === targetChar;
   const match = modelMatch || literalMatch;
 
-  // Start from model score (float allowed), clamp to [0,100]
   let score = Number.isFinite(Number(parsed?.score)) ? Number(parsed.score) : 0;
   score = Math.max(0, Math.min(100, score));
 
-  // Doodle guard: non-hanzi/circle/blob OR very low confidence
   const conf = Number(parsed?.recognition_confidence);
   const isDoodle =
     parsed?.is_doodle === true ||
     looksLikeDoodle(rec) ||
     (Number.isFinite(conf) && conf < 0.45);
 
-  if (isDoodle) {
-    score = Math.min(score, 5); // brutal cap for doodles
-  }
-
-  // Target-aware guard: mismatch => hard cap
-  if (targetChar && !match) {
-    score = Math.min(score, 10);
-  }
+  if (isDoodle) score = Math.min(score, 5);     // doodle: ≤5
+  if (targetChar && !match) score = Math.min(score, 10); // mismatch: ≤10
 
   return score;
 }
@@ -109,8 +185,6 @@ async function callModel({
   feedbackMax,
   extraInstruction = "",
 }) {
-  // Tight, target-aware, decimal scoring with doodle handling
-  // tell the model to handle the horizontal or vertical cases, where the input direction is important.
   const systemInstruction = `
 TASK (target-aware handwriting grading):
 1) Recognize the single Chinese character (top-1).
@@ -153,8 +227,8 @@ Return STRICT JSON:
         ],
       },
     ],
-    config: {
-      systemInstruction,
+    systemInstruction,
+    generationConfig: {
       temperature: 0.15,
       candidateCount: 1,
       maxOutputTokens: maxTokens,
@@ -188,15 +262,46 @@ Return STRICT JSON:
   });
 
   const finishReason = gc?.candidates?.[0]?.finishReason || null;
-
-  let textOut = typeof gc?.text === "string" ? gc.text : "";
-  if (!textOut) {
-    const cand = gc?.candidates?.[0];
-    const part = cand?.content?.parts?.find(p => typeof p?.text === "string");
-    if (part?.text) textOut = part.text;
-  }
-
+  const textOut = extractTextFromGC(gc);
   return { textOut, finishReason, promptFeedback: gc?.promptFeedback || null };
+}
+
+// Always fill a definition if missing.
+// - If recognized is a known hanzi in GLOSS: use it.
+// - If recognized is a hanzi but not in GLOSS: ask model (short JSON).
+// - If not a valid hanzi: return "not a valid Chinese character".
+async function ensureDefinition(recognizedChar, maxTokens = 256) {
+  const c = (recognizedChar || "").trim();
+  if (!isSingleCJKChar(c)) return "not a valid Chinese character";
+  if (GLOSS[c]) return GLOSS[c];
+
+  const prompt = `
+Provide a short dictionary-style gloss for the single Chinese character "${c}".
+Return STRICT JSON:
+{ "definition": "<<=64 chars concise meaning in English>" }`.trim();
+
+  const gc = await ai.models.generateContent({
+    model: MODEL,
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    systemInstruction: "Reply only valid JSON with a concise 'definition' field.",
+    generationConfig: {
+      temperature: 0.1,
+      candidateCount: 1,
+      maxOutputTokens: maxTokens,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "object",
+        additionalProperties: false,
+        properties: { definition: { type: "string", maxLength: 64 } },
+        required: ["definition"]
+      }
+    }
+  });
+
+  const t = extractTextFromGC(gc);
+  const j = tryParseJSON(t);
+  const def = (j?.definition || "").trim();
+  return def || "a Chinese character";
 }
 
 // ---------------- Route ----------------
@@ -215,11 +320,20 @@ app.post("/api/eval-handwriting", async (req, res) => {
     const mimeType = m[1];
     const base64   = m[2];
 
+    // Orientation estimate (server-side)
+    const orient = await estimateStrokeAngleFromDataURL(image).catch(() => null);
+    const orientHint = orient
+      ? `Orientation: estimated dominant stroke angle ≈ ${orient.angleDeg.toFixed(1)}°. 
+         If target is '一', only near-horizontal (≤20°) is acceptable; 
+         if target is '丨', only near-vertical (≥70°) is acceptable.`
+      : "";
+
     // Attempt 1
     let { textOut, finishReason, promptFeedback } = await callModel({
       base64, mimeType, target,
       maxTokens: DEFAULT_MAX_TOKENS,
-      feedbackMax: FEEDBACK_MAX
+      feedbackMax: FEEDBACK_MAX,
+      extraInstruction: orientHint
     });
 
     let parsed = tryParseJSON(textOut);
@@ -235,7 +349,8 @@ app.post("/api/eval-handwriting", async (req, res) => {
         base64, mimeType, target,
         maxTokens: RETRY_MAX_TOKENS,
         feedbackMax: RETRY_FEEDBACK_MAX,
-        extraInstruction: "If you cannot fit within limits, prioritize valid JSON. For mismatch, keep score ≤10 and feedback ultra-concise."
+        extraInstruction: (orientHint ? `${orientHint}\n` : "") +
+          "If you cannot fit within limits, prioritize valid JSON. For mismatch, keep score ≤10 and feedback ultra-concise."
       });
       textOut        = again.textOut || textOut;
       finishReason   = again.finishReason || finishReason;
@@ -255,12 +370,27 @@ app.post("/api/eval-handwriting", async (req, res) => {
       });
     }
 
-    const finalScore = computeFinalScore(parsed, target);
+    // ---- Guarantee 'definition' ----
+    if (!parsed?.definition || !parsed.definition.trim()) {
+      // Always fill — if non-hanzi, we'll put the explicit notice
+      parsed.definition = await ensureDefinition(parsed?.recognized || "");
+    }
+
+    // Compute score + orientation penalty
+    let finalScore = computeFinalScore(parsed, target);
+
+    let orientation_ok = true;
+    let orientation_note;
+    if (orient && orientationMismatch(target, orient.angleDeg)) {
+      orientation_ok = false;
+      orientation_note = `Expected orientation for '${(target||"").trim()}'; dominant angle ${orient.angleDeg.toFixed(1)}° indicates mismatch.`;
+      finalScore = Math.min(finalScore, 10);
+    }
 
     const out = {
-      score: finalScore, // decimals preserved
+      score: finalScore,
       recognized: parsed?.recognized ?? undefined,
-      definition: parsed?.definition ?? undefined,
+      definition: parsed?.definition ?? undefined, // <-- always present now
       feedback:
         parsed?.feedback ??
         parsed?.reason ??
@@ -274,6 +404,9 @@ app.post("/api/eval-handwriting", async (req, res) => {
       stroke_estimate: Number.isFinite(Number(parsed?.stroke_estimate))
         ? Number(parsed.stroke_estimate)
         : undefined,
+      dominant_angle_deg: orient?.angleDeg,
+      orientation_ok,
+      orientation_note,
       raw: textOut,
       model: MODEL,
       finishReason: finishReason || undefined
