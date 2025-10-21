@@ -21,9 +21,9 @@ const MODEL =
   "gemini-2.5-flash-lite";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.GEN_MAX_TOKENS) || 2048;
-const RETRY_MAX_TOKENS   = Number(process.env.GEN_RETRY_TOKENS) || 8192;
+const RETRY_MAX_TOKENS = Number(process.env.GEN_RETRY_TOKENS) || 8192;
 
-const FEEDBACK_MAX       = Number(process.env.FEEDBACK_MAX_CHARS) || 220;
+const FEEDBACK_MAX = Number(process.env.FEEDBACK_MAX_CHARS) || 220;
 const RETRY_FEEDBACK_MAX = Math.min(FEEDBACK_MAX, 180);
 
 // Google GenAI client (v1beta)
@@ -32,9 +32,7 @@ const ai = new GoogleGenAI({
   apiVersion: "v1beta",
 });
 
-app.get("/api/health", (_req, res) =>
-  res.json({ ok: true, model: MODEL })
-);
+app.get("/api/health", (_req, res) => res.json({ ok: true, model: MODEL }));
 
 // ---------------- Helpers ----------------
 function tryParseJSON(s) {
@@ -44,7 +42,9 @@ function tryParseJSON(s) {
   } catch {
     const j = s.match(/\{[\s\S]*\}/);
     if (j) {
-      try { return JSON.parse(j[0]); } catch {}
+      try {
+        return JSON.parse(j[0]);
+      } catch {}
     }
     return null;
   }
@@ -56,7 +56,9 @@ function extractTextFromGC(gc) {
   if (typeof gc.text === "string" && gc.text) return gc.text;
   const cand = gc?.candidates?.[0];
   if (cand?.content?.parts?.length) {
-    return cand.content.parts.map(p => (typeof p.text === "string" ? p.text : "")).join("");
+    return cand.content.parts
+      .map((p) => (typeof p.text === "string" ? p.text : ""))
+      .join("");
   }
   return "";
 }
@@ -68,26 +70,30 @@ function isSingleCJKChar(s) {
   if (chars.length !== 1) return false;
   const cp = chars[0].codePointAt(0);
   // CJK Unified + Extension A + Compatibility Ideographs
-  return (cp >= 0x4E00 && cp <= 0x9FFF) || (cp >= 0x3400 && cp <= 0x4DBF) || (cp >= 0xF900 && cp <= 0xFAFF);
+  return (
+    (cp >= 0x4e00 && cp <= 0x9fff) ||
+    (cp >= 0x3400 && cp <= 0x4dbf) ||
+    (cp >= 0xf900 && cp <= 0xfaff)
+  );
 }
 
 // Minimal built-in glossary for common characters (short glosses)
 const GLOSS = Object.freeze({
-  "一": "one; horizontal stroke",
-  "丨": "vertical stroke",
-  "十": "ten; cross shape",
-  "人": "person; human",
-  "口": "mouth; opening",
-  "大": "big; great",
-  "小": "small; little",
-  "中": "middle; center",
-  "上": "up; above",
-  "下": "down; below",
-  "日": "sun; day",
-  "月": "moon; month",
-  "山": "mountain",
-  "水": "water",
-  "火": "fire",
+  一: "one; horizontal stroke",
+  丨: "vertical stroke",
+  十: "ten; cross shape",
+  人: "person; human",
+  口: "mouth; opening",
+  大: "big; great",
+  小: "small; little",
+  中: "middle; center",
+  上: "up; above",
+  下: "down; below",
+  日: "sun; day",
+  月: "moon; month",
+  山: "mountain",
+  水: "water",
+  火: "fire",
 });
 
 // Doodle detector (server-side safety cap)
@@ -127,17 +133,29 @@ async function estimateStrokeAngleFromDataURL(dataUrl) {
   if (pts.length < 50) return null;
 
   // PCA on (x,y)
-  let mx = 0, my = 0;
-  for (const [x, y] of pts) { mx += x; my += y; }
-  mx /= pts.length; my /= pts.length;
-  let sxx = 0, syy = 0, sxy = 0;
+  let mx = 0,
+    my = 0;
   for (const [x, y] of pts) {
-    const dx = x - mx, dy = y - my;
-    sxx += dx * dx; syy += dy * dy; sxy += dx * dy;
+    mx += x;
+    my += y;
   }
-  sxx /= pts.length; syy /= pts.length; sxy /= pts.length;
-  const theta = 0.5 * Math.atan2(2 * sxy, (sxx - syy)); // radians in [-π/2, π/2]
-  let deg = Math.abs(theta * 180 / Math.PI);            // [0, 90]
+  mx /= pts.length;
+  my /= pts.length;
+  let sxx = 0,
+    syy = 0,
+    sxy = 0;
+  for (const [x, y] of pts) {
+    const dx = x - mx,
+      dy = y - my;
+    sxx += dx * dx;
+    syy += dy * dy;
+    sxy += dx * dy;
+  }
+  sxx /= pts.length;
+  syy /= pts.length;
+  sxy /= pts.length;
+  const theta = 0.5 * Math.atan2(2 * sxy, sxx - syy); // radians in [-π/2, π/2]
+  let deg = Math.abs((theta * 180) / Math.PI); // [0, 90]
   if (deg > 90) deg = 180 - deg;
   return { angleDeg: deg, width, height, points: pts.length };
 }
@@ -148,8 +166,8 @@ function orientationMismatch(target, angleDeg) {
   const t = (target || "").trim();
   const H_TOL = 20; // horizontal tolerance
   const V_TOL = 20; // vertical tolerance
-  if (t === "一") return angleDeg > H_TOL;                 // expect ~0°
-  if (t === "丨") return Math.abs(90 - angleDeg) > V_TOL;  // expect ~90°
+  if (t === "一") return angleDeg > H_TOL; // expect ~0°
+  if (t === "丨") return Math.abs(90 - angleDeg) > V_TOL; // expect ~90°
   return false;
 }
 
@@ -171,7 +189,7 @@ function computeFinalScore(parsed, target) {
     looksLikeDoodle(rec) ||
     (Number.isFinite(conf) && conf < 0.45);
 
-  if (isDoodle) score = Math.min(score, 5);     // doodle: ≤5
+  if (isDoodle) score = Math.min(score, 5); // doodle: ≤5
   if (targetChar && !match) score = Math.min(score, 10); // mismatch: ≤10
 
   return score;
@@ -246,19 +264,25 @@ Return STRICT JSON:
             additionalProperties: false,
             properties: {
               structure: { type: "number", minimum: 0, maximum: 60 },
-              strokes:   { type: "number", minimum: 0, maximum: 20 },
-              proportion:{ type: "number", minimum: 0, maximum: 20 }
-            }
+              strokes: { type: "number", minimum: 0, maximum: 20 },
+              proportion: { type: "number", minimum: 0, maximum: 20 },
+            },
           },
           score: { type: "number", minimum: 0, maximum: 100 },
           feedback: { type: "string", maxLength: feedbackMax },
           is_doodle: { type: "boolean" },
           recognition_confidence: { type: "number", minimum: 0, maximum: 1 },
-          stroke_estimate: { type: "integer", minimum: 0 }
+          stroke_estimate: { type: "integer", minimum: 0 },
         },
-        required: ["recognized", "definition", "target_match", "score", "feedback"]
-      }
-    }
+        required: [
+          "recognized",
+          "definition",
+          "target_match",
+          "score",
+          "feedback",
+        ],
+      },
+    },
   });
 
   const finishReason = gc?.candidates?.[0]?.finishReason || null;
@@ -283,7 +307,8 @@ Return STRICT JSON:
   const gc = await ai.models.generateContent({
     model: MODEL,
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    systemInstruction: "Reply only valid JSON with a concise 'definition' field.",
+    systemInstruction:
+      "Reply only valid JSON with a concise 'definition' field.",
     generationConfig: {
       temperature: 0.1,
       candidateCount: 1,
@@ -293,9 +318,9 @@ Return STRICT JSON:
         type: "object",
         additionalProperties: false,
         properties: { definition: { type: "string", maxLength: 64 } },
-        required: ["definition"]
-      }
-    }
+        required: ["definition"],
+      },
+    },
   });
 
   const t = extractTextFromGC(gc);
@@ -308,54 +333,78 @@ Return STRICT JSON:
 app.post("/api/eval-handwriting", async (req, res) => {
   try {
     const { image, target } = req.body || {};
-    if (!image || typeof image !== "string" || !image.startsWith("data:image")) {
-      return res.status(400).json({ error: "bad_request", detail: "Expected a data URL image in 'image'." });
+    if (
+      !image ||
+      typeof image !== "string" ||
+      !image.startsWith("data:image")
+    ) {
+      return res.status(400).json({
+        error: "bad_request",
+        detail: "Expected a data URL image in 'image'.",
+      });
     }
     if (!process.env.GOOGLE_API_KEY && !process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: "server_config", detail: "Missing GOOGLE_API_KEY (or GEMINI_API_KEY)." });
+      return res.status(500).json({
+        error: "server_config",
+        detail: "Missing GOOGLE_API_KEY (or GEMINI_API_KEY).",
+      });
     }
 
     const m = image.match(/^data:(.+?);base64,(.*)$/);
-    if (!m) return res.status(400).json({ error: "bad_request", detail: "Invalid data URL format." });
+    if (!m)
+      return res
+        .status(400)
+        .json({ error: "bad_request", detail: "Invalid data URL format." });
     const mimeType = m[1];
-    const base64   = m[2];
+    const base64 = m[2];
 
     // Orientation estimate (server-side)
-    const orient = await estimateStrokeAngleFromDataURL(image).catch(() => null);
+    const orient = await estimateStrokeAngleFromDataURL(image).catch(
+      () => null
+    );
     const orientHint = orient
-      ? `Orientation: estimated dominant stroke angle ≈ ${orient.angleDeg.toFixed(1)}°. 
+      ? `Orientation: estimated dominant stroke angle ≈ ${orient.angleDeg.toFixed(
+          1
+        )}°. 
          If target is '一', only near-horizontal (≤20°) is acceptable; 
          if target is '丨', only near-vertical (≥70°) is acceptable.`
       : "";
 
     // Attempt 1
     let { textOut, finishReason, promptFeedback } = await callModel({
-      base64, mimeType, target,
+      base64,
+      mimeType,
+      target,
       maxTokens: DEFAULT_MAX_TOKENS,
       feedbackMax: FEEDBACK_MAX,
-      extraInstruction: orientHint
+      extraInstruction: orientHint,
     });
 
     let parsed = tryParseJSON(textOut);
 
     const needRetry =
       finishReason === "MAX_TOKENS" ||
-      !textOut || !textOut.trim() ||
-      !parsed || !parsed.feedback;
+      !textOut ||
+      !textOut.trim() ||
+      !parsed ||
+      !parsed.feedback;
 
     if (needRetry) {
       // Attempt 2 (larger cap, tighter feedback)
       const again = await callModel({
-        base64, mimeType, target,
+        base64,
+        mimeType,
+        target,
         maxTokens: RETRY_MAX_TOKENS,
         feedbackMax: RETRY_FEEDBACK_MAX,
-        extraInstruction: (orientHint ? `${orientHint}\n` : "") +
-          "If you cannot fit within limits, prioritize valid JSON. For mismatch, keep score ≤10 and feedback ultra-concise."
+        extraInstruction:
+          (orientHint ? `${orientHint}\n` : "") +
+          "If you cannot fit within limits, prioritize valid JSON. For mismatch, keep score ≤10 and feedback ultra-concise.",
       });
-      textOut        = again.textOut || textOut;
-      finishReason   = again.finishReason || finishReason;
+      textOut = again.textOut || textOut;
+      finishReason = again.finishReason || finishReason;
       promptFeedback = again.promptFeedback || promptFeedback;
-      parsed         = tryParseJSON(textOut);
+      parsed = tryParseJSON(textOut);
     }
 
     if (!textOut || !textOut.trim()) {
@@ -366,7 +415,7 @@ app.post("/api/eval-handwriting", async (req, res) => {
             ? "The model hit its maximum output tokens twice."
             : "The model returned no text.",
         finishReason,
-        promptFeedback
+        promptFeedback,
       });
     }
 
@@ -383,7 +432,11 @@ app.post("/api/eval-handwriting", async (req, res) => {
     let orientation_note;
     if (orient && orientationMismatch(target, orient.angleDeg)) {
       orientation_ok = false;
-      orientation_note = `Expected orientation for '${(target||"").trim()}'; dominant angle ${orient.angleDeg.toFixed(1)}° indicates mismatch.`;
+      orientation_note = `Expected orientation for '${(
+        target || ""
+      ).trim()}'; dominant angle ${orient.angleDeg.toFixed(
+        1
+      )}° indicates mismatch.`;
       finalScore = Math.min(finalScore, 10);
     }
 
@@ -399,7 +452,8 @@ app.post("/api/eval-handwriting", async (req, res) => {
         parsed?.target_match === true ||
         (parsed?.recognized || "").trim() === (target || "").trim(),
       mismatch_reason: parsed?.mismatch_reason || undefined,
-      is_doodle: parsed?.is_doodle === true || looksLikeDoodle(parsed?.recognized),
+      is_doodle:
+        parsed?.is_doodle === true || looksLikeDoodle(parsed?.recognized),
       recognition_confidence: Number(parsed?.recognition_confidence ?? NaN),
       stroke_estimate: Number.isFinite(Number(parsed?.stroke_estimate))
         ? Number(parsed.stroke_estimate)
@@ -409,11 +463,16 @@ app.post("/api/eval-handwriting", async (req, res) => {
       orientation_note,
       raw: textOut,
       model: MODEL,
-      finishReason: finishReason || undefined
+      finishReason: finishReason || undefined,
     };
 
     if (!out.feedback) {
-      return res.status(502).json({ error: "bad_json", detail: "Missing 'feedback'.", raw: textOut, finishReason });
+      return res.status(502).json({
+        error: "bad_json",
+        detail: "Missing 'feedback'.",
+        raw: textOut,
+        finishReason,
+      });
     }
 
     return res.json(out);
@@ -421,11 +480,13 @@ app.post("/api/eval-handwriting", async (req, res) => {
     if (e?.status === 429 || e?.error?.status === "RESOURCE_EXHAUSTED") {
       return res.status(429).json({
         error: "quota_exceeded",
-        detail: "Rate or daily quota exceeded. Try later or switch model/tier."
+        detail: "Rate or daily quota exceeded. Try later or switch model/tier.",
       });
     }
     console.error(e);
-    return res.status(500).json({ error: "server_error", detail: String(e?.message || e) });
+    return res
+      .status(500)
+      .json({ error: "server_error", detail: String(e?.message || e) });
   }
 });
 
