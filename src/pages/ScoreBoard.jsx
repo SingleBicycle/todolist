@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-do
 import { getAllUsers } from '../firebase/database';
 import { getCurrentUser } from "../firebase/auth";
 import BackButton from "./BackButton"
+import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 
 const ScoreBoardPage = () => {
   const navigate = useNavigate();
@@ -94,7 +95,14 @@ const ScoreBoardPage = () => {
                   }}
                 >
                   <td>{index + 1}</td>
-                  <td>{user.username || "No username"}</td>
+                  <td className="flex flex-row items-center">              
+                    <img
+                    className="size-8 rounded-sm mr-2"
+                    src={user.photo_url || anonymousPfp}
+                    alt="Profile image"
+                    referrerPolicy="no-referrer"
+                    /> {user.username || "No username"}
+                    </td>
                   <td>{user.last_played_at || "Never"}</td>
                   <td>{user.points || 0}</td>
                 </tr>
