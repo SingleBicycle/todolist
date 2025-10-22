@@ -49,7 +49,7 @@ const HomePage = () => {
           </Link>
           <Link
             to={"/scoreboard"}
-            className="blue-button"
+            className="blue-button ml-8"
           >
             See scoreboard
           </Link>

@@ -96,7 +96,7 @@ const ProfileEditPage = () => {
         </h3>
         <button
           type="button"
-          className="blue-button"
+          className="blue-button ml-8"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -114,7 +114,7 @@ const ProfileEditPage = () => {
         </h3>
         <button
           type="button"
-          className="blue-button"
+          className="blue-button ml-8"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -131,7 +131,7 @@ const ProfileEditPage = () => {
         </h3>
         <button
           type="button"
-          className="blue-button"
+          className="blue-button ml-8"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -148,7 +148,7 @@ const ProfileEditPage = () => {
         </h3>
         <button
           type="button"
-          className="blue-button"
+          className="blue-button ml-8"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -221,14 +221,14 @@ const ProfileEditPage = () => {
             <div className="p-8 flex flex-row items-center justify-center">
               <button
                 type="button"
-                className="blue-button"
+                className="blue-button ml-8"
                 onClick={() => navigate(`/profile/${uid}`)}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="blue-button"
+                className="blue-button ml-8"
                 disabled={isLoading}
               >
                 {isLoading ? 'Updating...' : 'Save Changes'}

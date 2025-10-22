@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../firebase/auth";
 import { getUserById } from "../firebase/database";
+import BackButton from "./BackButton"
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 
 const ProfilePage = () => {
@@ -70,7 +71,7 @@ if (user === null) {
       </h3>
 
       <div className="flex flex-col items-center justify-center">
-        <div className="w-80/100 bg-[var(--tertiary)] rounded-md">
+        <div className="w-80/100 bg-[var(--tertiary)] rounded-md m-4">
 
           <div className="p-12 flex flex-row items-center justify-between">
             <div className="flex flex-row items-center">
@@ -85,7 +86,7 @@ if (user === null) {
               </h2>
             </div>
             {currentUser.uid == uid && <button
-              className="blue-button"
+              className="blue-button ml-8"
               onClick={() => {
                 navigate(`/profile/${uid}/edit`)
               }}
@@ -145,8 +146,8 @@ if (user === null) {
             </table>
 
           </div>
-
         </div>
+        <BackButton />
       </div>
     </div>
   );
