@@ -148,9 +148,9 @@ const ProfileEditPage = () => {
         <button
           type="button"
           className="blue-button ml-8"
-          onClick={() => navigate(`/profile/${uid}`)}
+          onClick={() => navigate(`/`)}
         >
-          Back to profile
+          Back to home
         </button>
       </div>
     );
