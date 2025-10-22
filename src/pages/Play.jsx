@@ -8,13 +8,14 @@ import {
   updateUser,
 } from "../firebase/database";
 import { PlayCircle, X } from "lucide-react";
+import BackButton from "./BackButton"
 
 const CWIDTH = 620;
 const CHEIGHT = 620;
 export { CWIDTH, CHEIGHT };
 
 const POINTS_PER_WORD_PER_DIFFICULTY = 30;
-const SCORE_THRES = 70;
+const SCORE_THRESHOLD = 70;
 const DIFFICULTIES = {
   1: "Easy",
   2: "Okay",
@@ -43,18 +44,21 @@ const PlayPage = ({ updateNavScore }) => {
     characters: {},
   });
 
+  const strokeCountRef = useRef(0);
   const dbUserRef = useRef({});
-
+  const [canvasImage, setCanvasImage] = useState(null); // NEW — store screenshot
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   const canvasRef = useRef(null);
+  const modalCanvasRef = useRef(null);
   const writerRef = useRef(null);
   const writerContainerRef = useRef(null);
   const ctxRef = useRef(null);
   const drawing = useRef(false);
+  const hasMoved = useRef(false); // NEW
   const last = useRef({ x: 0, y: 0 });
   const initialized = useRef(false);
 
@@ -143,6 +147,20 @@ const PlayPage = ({ updateNavScore }) => {
     );
   }, [charData.content]);
 
+  // Copy drawing to modal canvas when modal opens
+  useEffect(() => {
+    if (showModal && modalCanvasRef.current && canvasRef.current) {
+      const sourceCanvas = canvasRef.current;
+      const destCanvas = modalCanvasRef.current;
+
+      destCanvas.width = sourceCanvas.width;
+      destCanvas.height = sourceCanvas.height;
+
+      const destCtx = destCanvas.getContext("2d");
+      destCtx.drawImage(sourceCanvas, 0, 0);
+    }
+  }, [showModal]);
+
   const [showGrid, setShowGrid] = useState(false);
   const gridRef = useRef(null);
 
@@ -183,6 +201,7 @@ const PlayPage = ({ updateNavScore }) => {
   const down = (e) => {
     e.preventDefault();
     drawing.current = true;
+    hasMoved.current = false; // reset for this stroke
     last.current = getPos(e);
   };
 
@@ -191,6 +210,7 @@ const PlayPage = ({ updateNavScore }) => {
     const p = getPos(e);
     const ctx = ctxRef.current;
     if (!ctx) return;
+    hasMoved.current = true;
     ctx.beginPath();
     ctx.moveTo(last.current.x, last.current.y);
     ctx.lineTo(p.x, p.y);
@@ -199,6 +219,9 @@ const PlayPage = ({ updateNavScore }) => {
   };
 
   const up = () => {
+    if (drawing.current && hasMoved.current) {
+      strokeCountRef.current += 1;
+    }
     drawing.current = false;
   };
 
@@ -213,6 +236,8 @@ const PlayPage = ({ updateNavScore }) => {
     clearDrawing();
     setResult(null);
     setError(null);
+    setShowModal(false);
+    strokeCountRef.current = 0;
   };
 
   const animate = () => {
@@ -222,6 +247,22 @@ const PlayPage = ({ updateNavScore }) => {
       onComplete: () => writerRef.current.hideCharacter(),
     });
   };
+
+  const calcFinalScore = (
+    aiScore,
+    confidence,
+    strokeEstimate,
+    targetMatch,
+    orientationOk,
+    isDoodle = false
+  ) => {
+    if (!orientationOk || !targetMatch || isDoodle) return 0;
+    const strokeMatchRatio =
+      (strokeEstimate - Math.abs(strokeEstimate - strokeCountRef.current)) /
+      strokeEstimate;
+    return aiScore * confidence * strokeMatchRatio;
+  };
+
   const updatePoints = async () => {
     if (
       dbUserRef.current?.id &&
@@ -268,6 +309,7 @@ const PlayPage = ({ updateNavScore }) => {
       let parsed = null;
       try {
         parsed = JSON.parse(text);
+        console.log(parsed);
       } catch {
         // leave parsed as null
       }
@@ -282,9 +324,19 @@ const PlayPage = ({ updateNavScore }) => {
         return;
       }
 
-      if (parsed.score >= SCORE_THRES) {
+      if (
+        calcFinalScore(
+          parsed.score,
+          parsed.recognition_confidence,
+          parsed.stroke_estimate,
+          parsed.target_match,
+          parsed.orientation_ok,
+          parsed.is_doodle
+        ) >= SCORE_THRESHOLD
+      ) {
         updatePoints();
       }
+      setCanvasImage(dataUrl);
       setResult({ parsed, raw: text });
       setShowModal(true);
     } catch (e) {
@@ -295,6 +347,7 @@ const PlayPage = ({ updateNavScore }) => {
       setLoading(false);
     }
   };
+
   const handleNextCharacter = async () => {
     setLoading(true);
     setShowModal(false);
@@ -434,14 +487,14 @@ const PlayPage = ({ updateNavScore }) => {
                   ref={gridRef}
                   className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-10"
                 >
-                  <div className="grid grid-cols-6 gap-2 w-md">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 w-sm lg:w-md">
                     {Object.entries(charData.characters).map(
                       ([id, content], index) => (
                         <button
                           key={index}
                           onClick={() => handleCharacterChange(id)}
                           disabled={loading}
-                          className={`relative !p-0 text-xl font-bold rounded-sm border-1 transition-all ${
+                          className={`relative !p-0 !m-0 text-lg font-bold rounded-sm border-1 transition-all ${
                             charData.id === id
                               ? "border-blue-600 bg-blue-50 text-blue-600"
                               : "border-gray-300 bg-white text-gray-800 hover:border-blue-400 hover:bg-blue-50"
@@ -470,7 +523,7 @@ const PlayPage = ({ updateNavScore }) => {
           <button
             disabled={loading}
             onClick={animate}
-            className={`bg-[var(--primary)] flex gap-2 text-white !px-3 !py-2 !rounded-md ${
+            className={`bg-[var(--primary)] flex gap-2 text-white !px-3 !py-2 !rounded-md blue-button ${
               loading ? "!cursor-not-allowed opacity-50" : ""
             }`}
           >
@@ -511,7 +564,7 @@ const PlayPage = ({ updateNavScore }) => {
             <button
               disabled={loading}
               onClick={resetAll}
-              className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md ${
+              className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md blue-button ${
                 loading ? "!cursor-not-allowed opacity-50" : ""
               }`}
             >
@@ -522,42 +575,63 @@ const PlayPage = ({ updateNavScore }) => {
           <button
             disabled={loading}
             onClick={evaluate}
-            className={`bg-[var(--primary)] text-white !px-8 !rounded-md ${
+            className={`bg-[var(--primary)] text-white !px-8 !rounded-md blue-button ${
               loading ? "!cursor-not-allowed opacity-50" : ""
             }`}
           >
             {loading ? "Evaluating…" : "Evaluate"}
           </button>
         </div>
-
+          
         {showModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative">
               <button
-                onClick={() => setShowModal(false)}
-                className="absolute top-2 -right-3 text-gray-500 hover:text-gray-700"
+                onClick={resetAll}
+                className="absolute z-50 rounded-full !p-0 bg-white top-3 right-3 text-gray-500 hover:text-gray-700"
               >
-                <X className="w-5 h-5 cursor-pointer" />
+                <X size={18} />
               </button>
-
               {error ? (
-                <div className="text-red-600">
+                <div className="text-black">
                   <b>Error:</b> {error}
                 </div>
               ) : result?.parsed ? (
-                <div
-                  className="space-y-3
-                "
-                >
-                  <div>
-                    <h2 className="text-lg font-bold">Result:</h2>
+                <div className="space-y-3">
+                  <div className="flex justify-center p-0 border-gray-300 border-dashed border-3 rounded-md bg-gray-50 relative overflow-hidden">
+                    <img src={canvasImage}></img>
                   </div>
+
                   <div>
                     <p>
                       <b>Score:</b>{" "}
-                      {Number.isFinite(result.parsed.score)
-                        ? `${result.parsed.score}/100`
+                      {Number.isFinite(
+                        calcFinalScore(
+                          result.parsed.score,
+                          result.parsed.recognition_confidence,
+                          result.parsed.stroke_estimate,
+                          result.parsed.target_match,
+                          result.parsed.orientation_ok,
+                          result.parsed.is_doodle
+                        )
+                      )
+                        ? `${
+                            Math.round(
+                              calcFinalScore(
+                                result.parsed.score,
+                                result.parsed.recognition_confidence,
+                                result.parsed.stroke_estimate,
+                                result.parsed.target_match,
+                                result.parsed.orientation_ok,
+                                result.parsed.is_doodle
+                              ) * 10
+                            ) / 10
+                          }/100`
                         : "—"}
+                    </p>
+                    <p>
+                      <b>Target: </b> {charData.content} (
+                      {result.parsed.definition})
                     </p>
                     <p>
                       <b>Recognized:</b> {result.parsed.recognized ?? "—"}
@@ -570,10 +644,7 @@ const PlayPage = ({ updateNavScore }) => {
                   <div className="w-full flex justify-between items-center gap-3">
                     <button
                       disabled={loading}
-                      onClick={() => {
-                        setShowModal(false);
-                        resetAll();
-                      }}
+                      onClick={resetAll}
                       className={`bg-[var(--primary)] text-white !px-8 !rounded-md ${
                         loading ? "!cursor-not-allowed opacity-50" : ""
                       }`}
@@ -605,6 +676,10 @@ const PlayPage = ({ updateNavScore }) => {
             </div>
           </div>
         )}
+        <div className="mt-8 mb-12">
+          <BackButton />
+        </div>
+        
       </div>
     </div>
   );

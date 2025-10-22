@@ -49,7 +49,7 @@ const HomePage = () => {
           </Link>
           <Link
             to={"/scoreboard"}
-            className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+            className="blue-button ml-8"
           >
             See scoreboard
           </Link>
