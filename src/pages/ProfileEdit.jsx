@@ -14,6 +14,7 @@ const ProfileEditPage = () => {
     last_name: "",
   });
   const [user, setUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -25,6 +26,8 @@ const ProfileEditPage = () => {
         setIsLoading(true);
         const fetchedUser = await getUserById(uid);
         setUser(fetchedUser);
+        const currentUser = await getCurrentUser();
+        setCurrentUser(currentUser);
 
         setFormData({
           username: fetchedUser.username || '',
@@ -87,10 +90,17 @@ const ProfileEditPage = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="text-[var(--text)] mt-8">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
         <h3 className="text-2xl font-bold text-center mb-20">
           Loading profile edit page...
         </h3>
+        <button
+          type="button"
+          className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+          onClick={() => navigate(`/profile/${uid}`)}
+        >
+          Back to profile
+        </button>
       </div>
     );
   }
@@ -98,20 +108,51 @@ const ProfileEditPage = () => {
   // Error state
   if (error) {
     return (
-      <div className="text-[var(--text)] mt-8">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
         <h3 className="text-2xl font-bold text-center mb-20">
           Error loading profile edit page: {error.message}
         </h3>
+        <button
+          type="button"
+          className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+          onClick={() => navigate(`/profile/${uid}`)}
+        >
+          Back to profile
+        </button>
       </div>
     );
   }
 
   if (user === null) {
     return (
-      <div className="text-[var(--text)] mt-8">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
         <h3 className="text-2xl font-bold text-center mb-20">
           Profile edit page not found for uid: {uid}
         </h3>
+        <button
+          type="button"
+          className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+          onClick={() => navigate(`/profile/${uid}`)}
+        >
+          Back to profile
+        </button>
+      </div>
+    );
+  }
+
+  if (currentUser.uid == uid) {
+    return (
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
+        <h3 className="text-2xl font-bold text-center mb-20">
+          You can only edit your own profile!
+        </h3>
+        <button
+          type="button"
+          className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+          onClick={() => navigate(`/profile/${uid}`)}
+        >
+          Back to profile
+        </button>
       </div>
     );
   }
