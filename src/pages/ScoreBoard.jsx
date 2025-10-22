@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { getAllUsers } from '../firebase/database';
 import { getCurrentUser } from "../firebase/auth";
+import BackButton from "./BackButton"
 
 const ScoreBoardPage = () => {
   const navigate = useNavigate();
@@ -39,10 +40,11 @@ const ScoreBoardPage = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="text-[var(--text)] mt-8">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
         <h3 className="text-2xl font-bold text-center mb-20">
           Loading scoreboard...
         </h3>
+        <BackButton />
       </div>
     );
   }
@@ -50,10 +52,11 @@ const ScoreBoardPage = () => {
   // Error state
   if (error) {
     return (
-      <div className="text-[var(--text)] mt-8">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
         <h3 className="text-2xl font-bold text-center mb-20">
           Error loading scoreboard: {error.message}
         </h3>
+        <BackButton />
       </div>
     );
   }
@@ -66,7 +69,7 @@ const ScoreBoardPage = () => {
       </h2>
 
       <div className="flex flex-col items-center justify-center">
-        <div className="w-80/100 bg-[var(--tertiary)] rounded-md">
+        <div className="w-80/100 bg-[var(--tertiary)] rounded-md m-4">
           <table className="w-full">
             <thead className="bg-[var(--primary)] text-white">
               <tr>
@@ -99,8 +102,8 @@ const ScoreBoardPage = () => {
             </tbody>
           </table>
         </div>
+        <BackButton />
       </div>
-
     </div>
   );
 };
