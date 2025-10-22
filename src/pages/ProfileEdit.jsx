@@ -28,7 +28,6 @@ const ProfileEditPage = () => {
         setUser(fetchedUser);
         const currentUser = await getCurrentUser();
         setCurrentUser(currentUser);
-
         setFormData({
           username: fetchedUser.username || '',
           first_name: fetchedUser.first_name || '',
@@ -140,7 +139,7 @@ const ProfileEditPage = () => {
     );
   }
 
-  if (currentUser.uid == uid) {
+  if (currentUser.uid != uid) {
     return (
       <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
         <h3 className="text-2xl font-bold text-center mb-20">
