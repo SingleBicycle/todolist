@@ -8,6 +8,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const { uid } = useParams();
   const [user, setUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -17,6 +18,8 @@ const ProfilePage = () => {
         setIsLoading(true);
         const fetchedUser = await getUserById(uid);
         setUser(fetchedUser);
+        const currentUser = await getCurrentUser();
+        setCurrentUser(currentUser);
         setIsLoading(false);
       } catch (err) {
         setError(err);
@@ -81,7 +84,7 @@ if (user === null) {
                 {user.username || "No username"}
               </h2>
             </div>
-            <button
+            {currentUser.uid == uid && <button
               className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
               onClick={() => {
                 navigate(`/profile/${uid}/edit`)
@@ -89,6 +92,8 @@ if (user === null) {
             >
               Edit profile
             </button>
+            }
+
           </div>
 
           
