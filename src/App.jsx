@@ -5,6 +5,7 @@ import PlayPage from "./pages/Play";
 import NotFoundPage from "./pages/NotFound"
 import ProfilePage from "./pages/Profile";
 import ProfileEditPage from "./pages/ProfileEdit"
+import DictionaryPage from "./pages/Dictionary"
 import { LogOut } from "lucide-react";
 import ScoreBoardPage from "./pages/ScoreBoard";
 import { getCurrentUser, logout } from "./firebase/auth";
@@ -191,6 +192,7 @@ export default function App() {
             <Route path="/profile/:uid" element={<ProfilePage />} />
             <Route path="/profile/:uid/edit" element={<ProfileEditPage />} />
             <Route path="*" element={<NotFoundPage />} />
+            <Route path="/dictionary" element={<DictionaryPage />} />
           </Routes>
         </main>
       </div>
