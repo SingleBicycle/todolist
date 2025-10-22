@@ -96,7 +96,7 @@ const ProfileEditPage = () => {
         </h3>
         <button
           type="button"
-          className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+          className="blue-button"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -114,7 +114,7 @@ const ProfileEditPage = () => {
         </h3>
         <button
           type="button"
-          className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+          className="blue-button"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -131,7 +131,7 @@ const ProfileEditPage = () => {
         </h3>
         <button
           type="button"
-          className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+          className="blue-button"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -148,7 +148,7 @@ const ProfileEditPage = () => {
         </h3>
         <button
           type="button"
-          className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+          className="blue-button"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -221,14 +221,14 @@ const ProfileEditPage = () => {
             <div className="p-8 flex flex-row items-center justify-center">
               <button
                 type="button"
-                className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+                className="blue-button"
                 onClick={() => navigate(`/profile/${uid}`)}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+                className="blue-button"
                 disabled={isLoading}
               >
                 {isLoading ? 'Updating...' : 'Save Changes'}

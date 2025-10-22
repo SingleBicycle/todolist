@@ -85,7 +85,7 @@ if (user === null) {
               </h2>
             </div>
             {currentUser.uid == uid && <button
-              className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+              className="blue-button"
               onClick={() => {
                 navigate(`/profile/${uid}/edit`)
               }}
