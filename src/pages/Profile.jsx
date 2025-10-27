@@ -102,44 +102,44 @@ if (user === null) {
           <div className="p-12">
             <table>
               <tbody>
-                <tr>
-                  <td>First name</td>
+                {/* <tr>
+                  <td><b>First name</b></td>
                   <td>{user.first_name}</td>
                 </tr>
                 <tr>
-                  <td>Last name</td>
+                  <td><b>Last name</b></td>
                   <td>{user.last_name}</td>
                 </tr>
                 <tr>
-                  <td>Email</td>
+                  <td><b>Email</b></td>
                   <td>{user.email}</td>
                 </tr>
                 <tr>
-                  <td>UID</td>
+                  <td><b>UID</b></td>
                   <td>{uid}</td>
-                </tr>
+                </tr> */}
                 <tr>
-                  <td>Created at</td>
+                  <td><b>Created at</b></td>
                   <td>{user.created_at}</td>
                 </tr>
-                <tr>
+                {/* <tr>
                   <td>Is admin</td>
                   <td>{user.is_admin}</td>
                 </tr>
                 <tr>
                   <td>Is on random mode</td>
                   <td>{user.is_on_random_mode}</td>
-                </tr>
+                </tr> */}
                 <tr>
-                  <td>Last played at</td>
+                  <td><b>Last played at</b></td>
                   <td>{user.last_played_at}</td>
                 </tr>
                 <tr>
-                  <td>Last word</td>
+                  <td><b>Last word</b></td>
                   <td>{user.last_word}</td>
                 </tr>
                 <tr>
-                  <td>Points</td>
+                  <td><b>Points</b></td>
                   <td>{user.points}</td>
                 </tr>
               </tbody>
