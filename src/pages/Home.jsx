@@ -38,8 +38,8 @@ const HomePage = () => {
             Master Kanji & Chinese Writing
           </h1>
           <p className="!text-gray-600 text-lg max-w-2xl mb-8">
-            Learn or improve your Chinese writing skill with our fun interactive
-            app.
+            Learn or improve on your Chinese writing skill and see how you stack
+            against your friends globally.
           </p>
           <Link
             to={isLoggedIn ? "/play" : "/login"}
@@ -47,17 +47,8 @@ const HomePage = () => {
           >
             Play now
           </Link>
-          <Link
-            to={"/scoreboard"}
-            className="blue-button ml-8"
-          >
+          <Link to={"/scoreboard"} className="blue-button ml-8">
             See scoreboard
-          </Link>
-          <Link
-            to={"/dictionary"}
-            className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
-          >
-            See Dictionary
           </Link>
         </div>
         <div className="flex justify-center md:w-1/3 lg:w-1/2 min-h-72">

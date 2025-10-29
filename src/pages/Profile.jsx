@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../firebase/auth";
 import { getUserById } from "../firebase/database";
-import BackButton from "./BackButton"
+import BackButton from "./BackButton";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 
 const ProfilePage = () => {
@@ -53,26 +53,23 @@ const ProfilePage = () => {
     );
   }
 
-if (user === null) {
-  return (
-    <div className="text-[var(--text)] mt-8">
-      <h3 className="text-2xl font-bold text-center mb-20">
-        Profile not found for uid: {uid}
-      </h3>
-    </div>
-  );
-}
+  if (user === null) {
+    return (
+      <div className="text-[var(--text)] mt-8">
+        <h3 className="text-2xl font-bold text-center mb-20">
+          Profile not found for uid: {uid}
+        </h3>
+      </div>
+    );
+  }
 
   // Users state
   return (
     <div className="text-[var(--text)] mt-8">
-      <h3 className="text-2xl font-bold text-center mb-20">
-        Profile Page
-      </h3>
+      <h3 className="text-2xl font-bold text-center mb-20">Profile Page</h3>
 
       <div className="flex flex-col items-center justify-center">
         <div className="w-80/100 bg-[var(--tertiary)] rounded-md m-4">
-
           <div className="p-12 flex flex-row items-center justify-between">
             <div className="flex flex-row items-center">
               <img
@@ -85,19 +82,17 @@ if (user === null) {
                 {user.username || "No username"}
               </h2>
             </div>
-            {currentUser.uid == uid && <button
-              className="blue-button ml-8"
-              onClick={() => {
-                navigate(`/profile/${uid}/edit`)
-              }}
-            >
-              Edit profile
-            </button>
-            }
-
+            {currentUser.uid == uid && (
+              <button
+                className="blue-button ml-8"
+                onClick={() => {
+                  navigate(`/profile/${uid}/edit`);
+                }}
+              >
+                Edit profile
+              </button>
+            )}
           </div>
-
-          
 
           <div className="p-12">
             <table>
@@ -119,7 +114,9 @@ if (user === null) {
                   <td>{uid}</td>
                 </tr> */}
                 <tr>
-                  <td><b>Created at</b></td>
+                  <td>
+                    <b>Created at</b>
+                  </td>
                   <td>{user.created_at}</td>
                 </tr>
                 {/* <tr>
@@ -131,23 +128,28 @@ if (user === null) {
                   <td>{user.is_on_random_mode}</td>
                 </tr> */}
                 <tr>
-                  <td><b>Last played at</b></td>
+                  <td>
+                    <b>Last played at</b>
+                  </td>
                   <td>{user.last_played_at}</td>
                 </tr>
                 <tr>
-                  <td><b>Last word</b></td>
+                  <td>
+                    <b>Last word</b>
+                  </td>
                   <td>{user.last_word}</td>
                 </tr>
                 <tr>
-                  <td><b>Points</b></td>
+                  <td>
+                    <b>Points</b>
+                  </td>
                   <td>{user.points}</td>
                 </tr>
               </tbody>
             </table>
-
           </div>
         </div>
-        <BackButton />
+        {/* <BackButton /> */}
       </div>
     </div>
   );

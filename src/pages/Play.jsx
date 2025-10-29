@@ -8,7 +8,7 @@ import {
   updateUser,
 } from "../firebase/database";
 import { PlayCircle, X } from "lucide-react";
-import BackButton from "./BackButton"
+import BackButton from "./BackButton";
 
 const CWIDTH = 620;
 const CHEIGHT = 620;
@@ -16,6 +16,8 @@ export { CWIDTH, CHEIGHT };
 
 const POINTS_PER_WORD_PER_DIFFICULTY = 30;
 const SCORE_THRESHOLD = 70;
+
+const GAME_MODE = ["Standard", "Test"];
 const DIFFICULTIES = {
   1: "Easy",
   2: "Okay",
@@ -485,7 +487,7 @@ const PlayPage = ({ updateNavScore }) => {
               {showGrid && (
                 <div
                   ref={gridRef}
-                  className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-10"
+                  className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-20"
                 >
                   <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 w-sm lg:w-md">
                     {Object.entries(charData.characters).map(
@@ -520,24 +522,39 @@ const PlayPage = ({ updateNavScore }) => {
             </div>
             !
           </div>
-          <button
+
+          <select
+            value={"Standard"}
             disabled={loading}
-            onClick={animate}
-            className={`bg-[var(--primary)] flex gap-2 text-white !px-3 !py-2 !rounded-md blue-button ${
-              loading ? "!cursor-not-allowed opacity-50" : ""
+            className={`pl-2 text-black !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white ${
+              loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
             }`}
           >
-            <PlayCircle /> Animate
-          </button>
+            {GAME_MODE.map((item, index) => (
+              <option key={index} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="relative min-h-[620px] bg-white rounded-md border-gray-300 border-dashed border-4">
           {/* HanziWriter container - separate from canvas */}
+
           <div
             ref={writerContainerRef}
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
           />
 
+          <button
+            disabled={loading}
+            onClick={animate}
+            className={`bg-transparent z-10 right-2 top-2 absolute text-[var(--primary)] !p-0 ${
+              loading ? "!cursor-not-allowed opacity-50" : ""
+            }`}
+          >
+            <PlayCircle />
+          </button>
           {/* Canvas for drawing */}
           <canvas
             width={CWIDTH}
@@ -582,7 +599,7 @@ const PlayPage = ({ updateNavScore }) => {
             {loading ? "Evaluating…" : "Evaluate"}
           </button>
         </div>
-          
+
         {showModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative">
@@ -676,10 +693,9 @@ const PlayPage = ({ updateNavScore }) => {
             </div>
           </div>
         )}
-        <div className="mt-8 mb-12">
+        {/* <div className="mt-8 mb-12">
           <BackButton />
-        </div>
-        
+        </div> */}
       </div>
     </div>
   );
