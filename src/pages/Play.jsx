@@ -229,6 +229,7 @@ const PlayPage = ({ updateNavScore }) => {
     const ctx = ctxRef.current;
     if (!c || !ctx) return;
     ctx.clearRect(0, 0, c.width, c.height);
+    strokeCountRef.current = 0;
   };
 
   const resetAll = () => {
@@ -301,7 +302,11 @@ const PlayPage = ({ updateNavScore }) => {
       const res = await fetch("/api/eval-handwriting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl, target: charData.content }),
+        body: JSON.stringify({
+        image: dataUrl,
+        target: charData.content,
+        userStrokeCount: strokeCountRef.current,   // <-- send the real stroke count
+        }),
       });
 
       const text = await res.text();
@@ -410,9 +415,11 @@ const PlayPage = ({ updateNavScore }) => {
       ...prev,
       id: charId,
       content: prev.characters[charId],
+      
     }));
     clearDrawing();
     setShowGrid(false);
+    strokeCountRef.current = 0;
   };
 
   const handleDifficultyChange = async (newLevel) => {
