@@ -8,6 +8,7 @@ import {
   updateUser,
 } from "../firebase/database";
 import { PlayCircle, X } from "lucide-react";
+import BackButton from "./BackButton"
 
 const CWIDTH = 620;
 const CHEIGHT = 620;
@@ -529,7 +530,7 @@ const PlayPage = ({ updateNavScore }) => {
           <button
             disabled={loading}
             onClick={animate}
-            className={`bg-[var(--primary)] flex gap-2 text-white !px-3 !py-2 !rounded-md ${
+            className={`bg-[var(--primary)] flex gap-2 text-white !px-3 !py-2 !rounded-md blue-button ${
               loading ? "!cursor-not-allowed opacity-50" : ""
             }`}
           >
@@ -570,7 +571,7 @@ const PlayPage = ({ updateNavScore }) => {
             <button
               disabled={loading}
               onClick={resetAll}
-              className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md ${
+              className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md blue-button ${
                 loading ? "!cursor-not-allowed opacity-50" : ""
               }`}
             >
@@ -581,14 +582,14 @@ const PlayPage = ({ updateNavScore }) => {
           <button
             disabled={loading}
             onClick={evaluate}
-            className={`bg-[var(--primary)] text-white !px-8 !rounded-md ${
+            className={`bg-[var(--primary)] text-white !px-8 !rounded-md blue-button ${
               loading ? "!cursor-not-allowed opacity-50" : ""
             }`}
           >
             {loading ? "Evaluating…" : "Evaluate"}
           </button>
         </div>
-
+          
         {showModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative">
@@ -682,6 +683,10 @@ const PlayPage = ({ updateNavScore }) => {
             </div>
           </div>
         )}
+        <div className="mt-8 mb-12">
+          <BackButton />
+        </div>
+        
       </div>
     </div>
   );
