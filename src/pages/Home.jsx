@@ -53,6 +53,12 @@ const HomePage = () => {
           >
             See scoreboard
           </Link>
+          <Link
+            to={"/dictionary"}
+            className="ml-8 bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+          >
+            See Dictionary
+          </Link>
         </div>
         <div className="flex justify-center md:w-1/3 lg:w-1/2 min-h-72">
           <div className="text-center p-8 w-full shadow-lg rounded-2xl bg-white flex items-center justify-center">
