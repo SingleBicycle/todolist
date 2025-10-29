@@ -304,7 +304,7 @@ const PlayPage = ({ updateNavScore }) => {
       const res = await fetch("/api/eval-handwriting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl, target: charData.content }),
+        body: JSON.stringify({ image: dataUrl, target: charData.content, StrokeCount: strokeCountRef.current}),
       });
 
       const text = await res.text();

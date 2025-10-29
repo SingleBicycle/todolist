@@ -202,36 +202,67 @@ async function callModel({
   maxTokens,
   feedbackMax,
   extraInstruction = "",
+  userStrokeCount = null,
 }) {
   const systemInstruction = `
-TASK (target-aware handwriting grading):
-1) Recognize the single Chinese character (top-1).
-2) Provide a short dictionary-style **definition** for the recognized character.
-3) Compare ONLY to the provided target character.
+CRITICAL TASK (STRICT handwriting grading):
+You are a strict Chinese calligraphy teacher. Be HARSH but fair.
 
-SCORING (decimals allowed):
-- If recognized != target (consider canonical simp/trad equivalents), set target_match=false and cap score ≤ 10.
-- If recognized == target, grade strictly:
-  structure (0–60), strokes (0–20), proportion (0–20); sum = score (0–100). Decimals OK (e.g., 81.5).
-- If the drawing is NOT a valid Chinese character (circle/thick dot/scribble), set is_doodle=true and cap score ≤ 5.
-- Keep "feedback" concise (≤ ${feedbackMax} chars), actionable, and target-specific.
-- Reply ONLY valid JSON. No extra text.
+1) Recognize the single Chinese character drawn.
+2) Provide definition for recognized character.
+3) **IMMEDIATELY check stroke count** - this is THE MOST IMPORTANT rule.
+
+STROKE COUNT RULES (ABSOLUTELY ENFORCED):
+- Chinese characters have EXACT stroke counts. This is non-negotiable.
+- If user drew fewer strokes than required: CHARACTER IS INCOMPLETE
+  * Missing 1 stroke: score ≤ 40, feedback MUST say "incomplete - missing X stroke(s)"
+  * Missing 2+ strokes: score ≤ 20, feedback MUST say "severely incomplete"
+- If user drew more strokes than required: score ≤ 30, say "too many strokes"
+- ONLY if stroke count is correct: grade quality (structure, stroke quality, proportion)
+
+SCORING (be strict, most students should get 60-75):
+- Incomplete character (wrong stroke count): AUTO-CAP as above, explain why
+- Wrong character (recognized != target): score ≤ 10
+- Doodle/scribble/not hanzi: score ≤ 5
+- Correct character, correct strokes, but poor quality: 50-70
+- Correct character, correct strokes, good quality: 70-85
+- Correct character, correct strokes, excellent: 85-95
+- Perfect calligraphy (rare): 95-100
+
+FEEDBACK RULES:
+- If stroke count wrong: MUST mention this FIRST ("incomplete, needs X more strokes")
+- Be specific about what's actually wrong
+- Don't give praise if the character is incomplete
+- Maximum ${feedbackMax} characters
+
 ${extraInstruction}`.trim();
 
+  const strokeInfo = userStrokeCount !== null 
+    ? `\n\n**CRITICAL INFO**: User drew exactly ${userStrokeCount} stroke(s). You MUST check if this matches the required stroke count for the target character '${target}'.` 
+    : "";
+
   const userPrompt = `
-Target: ${target || "(none)"}.
+Target character: '${target || "(none)"}'${strokeInfo}
+
+BEFORE grading quality, CHECK: Does the stroke count match what '${target}' requires?
+
 Return STRICT JSON:
 {
-  "recognized": "<top1 or short description if not a valid hanzi>",
-  "definition": "<short gloss for recognized char; if not a hanzi, say 'not a valid Chinese character'>",
+  "recognized": "<character or 'incomplete'>",
+  "definition": "<meaning>",
   "target_match": true|false,
-  "mismatch_reason": "<why>",                  // required if target_match=false
-  "subscores": { "structure": 0-60, "strokes": 0-20, "proportion": 0-20 },
-  "score": 0-100,                              // decimals allowed
-  "feedback": "<<=${feedbackMax} chars>",
-  "is_doodle": true|false,                     // true for circle/dot/scribble/non-hanzi
-  "recognition_confidence": 0.0-1.0,           // model's confidence in recognized
-  "stroke_estimate": 0                          // integer estimate (best effort)
+  "mismatch_reason": "<if false>",
+  "subscores": { 
+    "structure": 0-60,
+    "strokes": 0-20,
+    "proportion": 0-20
+  },
+  "score": 0-100,
+  "feedback": "<<=${feedbackMax} chars - if incomplete, say so FIRST>",
+  "is_doodle": true|false,
+  "recognition_confidence": 0.0-1.0,
+  "stroke_estimate": 0,
+  "stroke_count_correct": true|false
 }`.trim();
 
   const gc = await ai.models.generateContent({
@@ -247,7 +278,7 @@ Return STRICT JSON:
     ],
     systemInstruction,
     generationConfig: {
-      temperature: 0.15,
+      temperature: 0.05, // Even lower for consistency
       candidateCount: 1,
       maxOutputTokens: maxTokens,
       responseMimeType: "application/json",
@@ -273,6 +304,7 @@ Return STRICT JSON:
           is_doodle: { type: "boolean" },
           recognition_confidence: { type: "number", minimum: 0, maximum: 1 },
           stroke_estimate: { type: "integer", minimum: 0 },
+          stroke_count_correct: { type: "boolean" },
         },
         required: [
           "recognized",
@@ -280,6 +312,7 @@ Return STRICT JSON:
           "target_match",
           "score",
           "feedback",
+          "stroke_estimate",
         ],
       },
     },
@@ -332,7 +365,13 @@ Return STRICT JSON:
 // ---------------- Route ----------------
 app.post("/api/eval-handwriting", async (req, res) => {
   try {
-    const { image, target } = req.body || {};
+    const { image, target, StrokeCount, strokeCount } = req.body || {};
+    const userStrokeCount =
+
+     Number.isFinite(Number(StrokeCount)) ? Number(StrokeCount)
+     : Number.isFinite(Number(strokeCount)) ? Number(strokeCount)
+     : null;
+
     if (
       !image ||
       typeof image !== "string" ||
@@ -349,6 +388,7 @@ app.post("/api/eval-handwriting", async (req, res) => {
         detail: "Missing GOOGLE_API_KEY (or GEMINI_API_KEY).",
       });
     }
+    
 
     const m = image.match(/^data:(.+?);base64,(.*)$/);
     if (!m)
@@ -378,6 +418,7 @@ app.post("/api/eval-handwriting", async (req, res) => {
       maxTokens: DEFAULT_MAX_TOKENS,
       feedbackMax: FEEDBACK_MAX,
       extraInstruction: orientHint,
+      userStrokeCount,
     });
 
     let parsed = tryParseJSON(textOut);
@@ -439,6 +480,21 @@ app.post("/api/eval-handwriting", async (req, res) => {
       )}° indicates mismatch.`;
       finalScore = Math.min(finalScore, 10);
     }
+    if (Number.isFinite(userStrokeCount) && parsed?.stroke_count_correct === false) {
+      const est = Number.isFinite(Number(parsed?.stroke_estimate))
+        ? Number(parsed.stroke_estimate)
+        : null;
+      const tooFew = est == null ? true : userStrokeCount < est;
+      // Cap score: fewer strokes → ≤20 (incomplete), extra strokes → ≤30
+      finalScore = Math.min(finalScore, tooFew ? 20 : 30);
+      // Prepend a clear feedback message
+      const missing = est != null ? Math.max(0, est - userStrokeCount) : null;
+      const prefix =
+        missing && missing > 0
+          ? `Incomplete — missing ${missing} stroke(s). `
+          : `Wrong stroke count. `;
+      parsed.feedback = prefix + (parsed?.feedback || "");
+    }
 
     const out = {
       score: finalScore,
@@ -458,6 +514,10 @@ app.post("/api/eval-handwriting", async (req, res) => {
       stroke_estimate: Number.isFinite(Number(parsed?.stroke_estimate))
         ? Number(parsed.stroke_estimate)
         : undefined,
+       stroke_count_correct:
+       typeof parsed?.stroke_count_correct === "boolean"
+          ? parsed.stroke_count_correct
+          : undefined,
       dominant_angle_deg: orient?.angleDeg,
       orientation_ok,
       orientation_note,
