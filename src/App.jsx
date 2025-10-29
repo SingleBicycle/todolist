@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import HomePage from "./pages/Home";
 import LoginPage from "./pages/Login";
 import PlayPage from "./pages/Play";
-import NotFoundPage from "./pages/NotFound"
+import NotFoundPage from "./pages/NotFound";
 import ProfilePage from "./pages/Profile";
-import ProfileEditPage from "./pages/ProfileEdit"
-import DictionaryPage from "./pages/Dictionary"
+import ProfileEditPage from "./pages/ProfileEdit";
+import DictionaryPage from "./pages/Dictionary";
 import { LogOut } from "lucide-react";
 import ScoreBoardPage from "./pages/ScoreBoard";
 import { getCurrentUser, logout } from "./firebase/auth";
@@ -67,12 +67,41 @@ function Navbar({ user, isLoading, score }) {
   return (
     <nav className="backdrop-blur-sm border-b z-50 border-gray-200 w-full bg-white fixed top-0 shadow-md">
       <div className="container mx-auto py-3 px-6 flex justify-between items-center w-full">
-        <Link
-          to="/"
-          className="!px-0 text-2xl !font-bold text-[var(--primary)] hover:text-[var(--accent-primary)] transition-all duration-200 ease-in-out"
-        >
-          {import.meta.env.VITE_APP_NAME}
-        </Link>
+        <div className="flex">
+          <Link
+            to="/"
+            className="!px-0 text-2xl !font-bold text-[var(--primary)] hover:text-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+          >
+            {import.meta.env.VITE_APP_NAME}
+          </Link>
+          <div className="pl-16 flex gap-8 items-center">
+            {" "}
+            <Link
+              className=" !px-0 text-[var(--primary)] hover:text-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+              to="/"
+            >
+              Home
+            </Link>
+            <Link
+              className=" !px-0 text-[var(--primary)] hover:text-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+              to="/scoreboard"
+            >
+              Scoreboard
+            </Link>
+            <Link
+              className="!px-0 text-[var(--primary)] hover:text-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+              to="/dictionary"
+            >
+              Dictionary
+            </Link>
+            <Link
+              className="!px-0 text-[var(--primary)] hover:text-[var(--accent-primary)] transition-all duration-200 ease-in-out"
+              to="/play"
+            >
+              Play
+            </Link>
+          </div>
+        </div>
 
         <div className="flex items-center gap-4">
           {isLoading ? (
