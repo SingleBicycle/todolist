@@ -552,7 +552,9 @@ ${verticalHint}
          parsed?.reason ??
          (textOut ? String(textOut).slice(0, 400) : "—"));
 
-    const recognizedFinal = targetMatch ? (parsed?.recognized ?? "—") : "—";
+    const recognizedFinal =
+    finalScore === 0 ? "n/a" :
+    (targetMatch ? (parsed?.recognized ?? "—") : "—");
 
     // -------- Response --------
     const out = {
