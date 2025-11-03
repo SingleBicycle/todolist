@@ -65,8 +65,19 @@ function Navbar({ user, isLoading, score }) {
   }, []);
 
   return (
-    <nav className="backdrop-blur-sm border-b z-50 border-gray-200 w-full bg-white fixed top-0 shadow-md">
+    <nav className="backdrop-blur-sm border-b z-50 border-gray-200 w-full bg-white fixed top-0 shadow-md flex flex-row justify-start items-center">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_back" />
+      <span
+        className="pl-8 -mr-14 material-symbols-outlined text-[var(--primary)] hover:text-[var(--accent-primary)] transition-colors duration-300"
+        style={{
+          display: location.pathname === '/' ? 'none' : 'block'  // Hide arrow on landing page
+        }}
+        onClick={() => navigate(-1)}
+      >
+        arrow_back
+      </span>
       <div className="container mx-auto py-3 px-6 flex justify-between items-center w-full">
+
         <div className="flex">
           <Link
             to="/"
@@ -79,6 +90,9 @@ function Navbar({ user, isLoading, score }) {
             <Link
               className=" !px-0 text-[var(--primary)] hover:text-[var(--accent-primary)] transition-all duration-200 ease-in-out"
               to="/"
+              style={{
+                display: location.pathname === '/' ? 'none' : 'block'  // Hide home button on landing page
+              }}
             >
               Home
             </Link>
