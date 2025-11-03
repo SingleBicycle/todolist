@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../firebase/auth";
 import { getUserById } from "../firebase/database";
-import BackButton from "./BackButton";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 
 const ProfilePage = () => {
@@ -74,7 +73,7 @@ const ProfilePage = () => {
             <div className="flex flex-row items-center">
               <img
                 className="pr-8"
-                src={user.photo_url}
+                src={user.photo_url || anonymousPfp}
                 alt="Profile image"
                 referrerPolicy="no-referrer"
               />
@@ -149,7 +148,6 @@ const ProfilePage = () => {
             </table>
           </div>
         </div>
-        {/* <BackButton /> */}
       </div>
     </div>
   );

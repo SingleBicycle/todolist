@@ -8,7 +8,7 @@ import {
   updateUser,
 } from "../firebase/database";
 import { PlayCircle, X } from "lucide-react";
-import BackButton from "./BackButton";
+
 
 const CWIDTH = 620;
 const CHEIGHT = 620;
@@ -693,9 +693,6 @@ const PlayPage = ({ updateNavScore }) => {
             </div>
           </div>
         )}
-        {/* <div className="mt-8 mb-12">
-          <BackButton />
-        </div> */}
       </div>
     </div>
   );
