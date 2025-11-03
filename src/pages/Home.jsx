@@ -1,5 +1,5 @@
 import { BookOpen, Smartphone, CheckSquare, Gift } from "lucide-react";
-import { Link } from "../App";
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "./Login";
 function FeatureCard({ icon, title, desc }) {
@@ -15,7 +15,6 @@ function FeatureCard({ icon, title, desc }) {
 }
 
 const HomePage = () => {
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   useEffect(() => {
     const setIsLoggedInWithUser = async () => {
@@ -23,7 +22,7 @@ const HomePage = () => {
       setIsLoggedIn(user != null);
     };
     setIsLoggedInWithUser();
-  }, [])
+  }, []);
   return (
     <div className="min-h-screen pt-24 bg-[var(--tertiary)]">
       {/* Hero Section */}
@@ -39,14 +38,17 @@ const HomePage = () => {
             Master Kanji & Chinese Writing
           </h1>
           <p className="!text-gray-600 text-lg max-w-2xl mb-8">
-            Learn or improve your Chinese writing skill with our fun interactive
-            app.
+            Learn or improve on your Chinese writing skill and see how you stack
+            against your friends globally.
           </p>
           <Link
             to={isLoggedIn ? "/play" : "/login"}
-            className=" bg-[var(--primary)] text-white shadow-md"
+            className="bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
           >
-            Learn now
+            Play now
+          </Link>
+          <Link to={"/scoreboard"} className="blue-button ml-8">
+            See scoreboard
           </Link>
         </div>
         <div className="flex justify-center md:w-1/3 lg:w-1/2 min-h-72">
