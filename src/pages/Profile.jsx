@@ -144,6 +144,12 @@ const ProfilePage = () => {
                   </td>
                   <td>{user.points}</td>
                 </tr>
+                <tr>
+                  <td>
+                    <b>Language</b>
+                  </td>
+                  <td>{user.language}</td>
+                </tr>
               </tbody>
             </table>
           </div>
