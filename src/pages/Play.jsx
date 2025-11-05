@@ -8,16 +8,15 @@ import {
   updateUser,
 } from "../firebase/database";
 import { PlayCircle, X } from "lucide-react";
-import BackButton from "./BackButton";
 
+// Constants
 const CWIDTH = 620;
 const CHEIGHT = 620;
-export { CWIDTH, CHEIGHT };
-
 const POINTS_PER_WORD_PER_DIFFICULTY = 30;
+const TEST_MODE_POINT_MULTIPLIER = 1.5;
 const SCORE_THRESHOLD = 70;
-
-const GAME_MODE = ["Standard", "Test"];
+const TEST_MODE_TIME = 40; // sec
+const GAME_MODE = ["Standard", "Test(5)"];
 const DIFFICULTIES = {
   1: "Easy",
   2: "Okay",
@@ -29,6 +28,9 @@ const SORTED_DIFFICULTIES = Object.keys(DIFFICULTIES)
   .sort((a, b) => a - b)
   .map((key) => ({ key: Number(key), label: DIFFICULTIES[key] }));
 
+export { CWIDTH, CHEIGHT };
+
+// Utility functions
 const canvasHasInk = (canvas) => {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -38,200 +40,214 @@ const canvasHasInk = (canvas) => {
   return false;
 };
 
+const getCanvasPos = (e, canvas) => {
+  const rect = canvas.getBoundingClientRect();
+  const point = "touches" in e ? e.touches[0] : e;
+  return {
+    x: (point.clientX - rect.left) * (canvas.width / rect.width),
+    y: (point.clientY - rect.top) * (canvas.height / rect.height),
+  };
+};
+
+const shuffleArray = (arr) => [...arr].sort(() => 0.5 - Math.random());
+
+const getRandomChars = (charObj, count = 5) => {
+  const shuffled = shuffleArray(Object.entries(charObj));
+  return Object.fromEntries(shuffled.slice(0, count));
+};
+
+const calcFinalScore = (
+  aiScore,
+  confidence,
+  strokeEstimate,
+  targetMatch,
+  orientationOk,
+  strokeCount,
+  isDoodle = false
+) => {
+  if (!orientationOk || !targetMatch || isDoodle) return 0;
+  const strokeMatchRatio =
+    (strokeEstimate - Math.abs(strokeEstimate - strokeCount)) / strokeEstimate;
+  return aiScore * confidence * strokeMatchRatio;
+};
+
+// Main Component
 const PlayPage = ({ updateNavScore }) => {
+  // State
   const [charData, setCharData] = useState({
     id: "",
     content: "",
     difficulty: 1,
     characters: {},
   });
-
-  const strokeCountRef = useRef(0);
-  const dbUserRef = useRef({});
-  const [canvasImage, setCanvasImage] = useState(null); // NEW — store screenshot
+  const [canvasImage, setCanvasImage] = useState(null);
   const [loading, setLoading] = useState(false);
+
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+
   const [showModal, setShowModal] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(TEST_MODE_TIME);
+  // Refs
+  const refs = useRef({
+    canvas: null,
+    modalCanvas: null,
+    writer: null,
+    writerContainer: null,
+    ctx: null,
+    gridContainer: null,
+    gameMode: "Standard",
+    strokeCount: 0,
+    dbUser: {},
+    isDrawing: false,
+    hasMoved: false,
+    lastPos: { x: 0, y: 0 },
+    initialized: false,
+  }).current;
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  const canvasRef = useRef(null);
-  const modalCanvasRef = useRef(null);
-  const writerRef = useRef(null);
-  const writerContainerRef = useRef(null);
-  const ctxRef = useRef(null);
-  const drawing = useRef(false);
-  const hasMoved = useRef(false); // NEW
-  const last = useRef({ x: 0, y: 0 });
-  const initialized = useRef(false);
+  useEffect(() => {
+    if (!isTimerRunning) return;
 
-  // Initialize user data and load first character (init only ran once)
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isTimerRunning]);
+  // Initialize user data and load first character
   useEffect(() => {
     const init = async () => {
+      if (refs.initialized) return;
+
       setLoading(true);
       try {
         const user = await getCurrentUser();
-        let selectedDifficulty = 1;
-        let selectedTarget = "";
-        let selectedTargetId = "";
+        let difficulty = 1;
+        let target = "";
+        let targetId = "";
 
         if (user?.uid) {
-          // Authorized user
           const dbUser = await getUserById(user.uid);
-          dbUserRef.current = dbUser;
+          refs.dbUser = dbUser;
 
           if (dbUser?.last_word) {
-            const lastCharacter = await getCharacterById(dbUser.last_word);
-
-            if (lastCharacter) {
-              selectedDifficulty = lastCharacter.difficulty;
-              selectedTarget = lastCharacter.content;
-              selectedTargetId = dbUser.last_word;
+            const lastChar = await getCharacterById(dbUser.last_word);
+            if (lastChar) {
+              difficulty = lastChar.difficulty;
+              target = lastChar.content;
+              targetId = dbUser.last_word;
             }
           }
         }
 
-        // Load characters for the selected difficulty
-        const chars = await getDifficultyCharacter(selectedDifficulty);
-        if (chars && chars.length > 0) {
-          setCharData((prev) => ({
-            ...prev,
-            id: selectedTargetId,
-            content: selectedTarget,
-            difficulty: selectedDifficulty,
-            characters: chars.reduce((acc, char) => {
-              acc[char.id] = char.content;
-              return acc;
-            }, {}),
-          }));
+        const chars = await getDifficultyCharacter(difficulty);
+        if (chars?.length) {
+          const charMap = chars.reduce((acc, char) => {
+            acc[char.id] = char.content;
+            return acc;
+          }, {});
 
-          console.log("set char");
+          setCharData({
+            id: targetId,
+            content: target,
+            difficulty,
+            characters: charMap,
+          });
         } else {
-          setError("No characters available for this difficulty");
-          setShowModal(true);
+          throw new Error("No characters available for this difficulty");
         }
       } catch (err) {
         console.error("Initialization error:", err);
         setError(String(err));
         setShowModal(true);
       } finally {
-        initialized.current = true;
+        refs.initialized = true;
         setLoading(false);
       }
     };
 
-    if (!initialized.current) {
-      init();
-    }
+    init();
   }, []);
 
-  // Initialize canvas context (runs once)
+  // Initialize canvas context
   useEffect(() => {
-    const c = canvasRef.current;
-    if (!c || ctxRef.current || initialized.current) return;
+    const canvas = refs.canvas;
+    if (!canvas || refs.ctx) return;
 
-    c.width = CWIDTH;
-    c.height = CHEIGHT;
-    const ctx = c.getContext("2d", { willReadFrequently: true });
+    canvas.width = CWIDTH;
+    canvas.height = CHEIGHT;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineWidth = 12;
     ctx.strokeStyle = "#111827";
-    ctxRef.current = ctx;
+    refs.ctx = ctx;
   }, []);
 
-  // Update HanziWriter when target changes
+  // Update HanziWriter
   useEffect(() => {
-    if (!writerContainerRef.current || !charData.content) return;
-
-    writerRef.current = testtHanziWriter(
-      writerContainerRef.current,
-      charData.content
-    );
+    if (refs.writerContainer && charData.content) {
+      refs.writer = testtHanziWriter(refs.writerContainer, charData.content);
+    }
   }, [charData.content]);
 
-  // Copy drawing to modal canvas when modal opens
+  // Copy canvas to modal
   useEffect(() => {
-    if (showModal && modalCanvasRef.current && canvasRef.current) {
-      const sourceCanvas = canvasRef.current;
-      const destCanvas = modalCanvasRef.current;
-
-      destCanvas.width = sourceCanvas.width;
-      destCanvas.height = sourceCanvas.height;
-
-      const destCtx = destCanvas.getContext("2d");
-      destCtx.drawImage(sourceCanvas, 0, 0);
+    if (showModal && refs.modalCanvas && refs.canvas) {
+      const dest = refs.modalCanvas;
+      dest.width = refs.canvas.width;
+      dest.height = refs.canvas.height;
+      const destCtx = dest.getContext("2d");
+      destCtx.drawImage(refs.canvas, 0, 0);
     }
   }, [showModal]);
 
-  const [showGrid, setShowGrid] = useState(false);
-  const gridRef = useRef(null);
-
-  // Add useEffect for outside click detection
+  // Handle grid close on outside click
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (gridRef.current && !gridRef.current.contains(event.target)) {
+    if (!showGrid) return;
+
+    const handleClickOutside = (e) => {
+      if (refs.gridContainer && !refs.gridContainer.contains(e.target)) {
         setShowGrid(false);
       }
     };
-    let ignoreOnce = false;
-    const guard = (e) => {
-      if (ignoreOnce) {
-        ignoreOnce = false;
-        return;
-      }
-      handleClickOutside(e);
-    };
-    if (showGrid) {
-      document.addEventListener("mousedown", guard);
-    }
 
-    return () => {
-      document.removeEventListener("mousedown", guard);
-    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showGrid]);
 
-  const getPos = (e) => {
-    const c = canvasRef.current;
-    const r = c.getBoundingClientRect();
-    const p = "touches" in e ? e.touches[0] : e;
-    return {
-      x: (p.clientX - r.left) * (c.width / r.width),
-      y: (p.clientY - r.top) * (c.height / r.height),
-    };
-  };
-
-  const down = (e) => {
+  // Canvas drawing handlers
+  const handleMouseDown = (e) => {
     e.preventDefault();
-    drawing.current = true;
-    hasMoved.current = false; // reset for this stroke
-    last.current = getPos(e);
+    refs.isDrawing = true;
+    refs.hasMoved = false;
+    refs.lastPos = getCanvasPos(e, refs.canvas);
   };
 
-  const move = (e) => {
-    if (!drawing.current) return;
-    const p = getPos(e);
-    const ctx = ctxRef.current;
-    if (!ctx) return;
-    hasMoved.current = true;
-    ctx.beginPath();
-    ctx.moveTo(last.current.x, last.current.y);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    last.current = p;
+  const handleMouseMove = (e) => {
+    if (!refs.isDrawing || !refs.ctx) return;
+    const pos = getCanvasPos(e, refs.canvas);
+    refs.hasMoved = true;
+    refs.ctx.beginPath();
+    refs.ctx.moveTo(refs.lastPos.x, refs.lastPos.y);
+    refs.ctx.lineTo(pos.x, pos.y);
+    refs.ctx.stroke();
+    refs.lastPos = pos;
   };
 
-  const up = () => {
-    if (drawing.current && hasMoved.current) {
-      strokeCountRef.current += 1;
+  const handleMouseUp = () => {
+    if (refs.isDrawing && refs.hasMoved) {
+      refs.strokeCount += 1;
     }
-    drawing.current = false;
+    refs.isDrawing = false;
   };
 
+  // Canvas actions
   const clearDrawing = () => {
-    const c = canvasRef.current;
-    const ctx = ctxRef.current;
-    if (!c || !ctx) return;
-    ctx.clearRect(0, 0, c.width, c.height);
+    if (refs.canvas && refs.ctx) {
+      refs.ctx.clearRect(0, 0, refs.canvas.width, refs.canvas.height);
+    }
   };
 
   const resetAll = () => {
@@ -239,115 +255,32 @@ const PlayPage = ({ updateNavScore }) => {
     setResult(null);
     setError(null);
     setShowModal(false);
-    strokeCountRef.current = 0;
+    refs.strokeCount = 0;
   };
 
   const animate = () => {
-    if (!writerRef.current) return;
-    writerRef.current.hideCharacter();
-    writerRef.current.animateCharacter({
-      onComplete: () => writerRef.current.hideCharacter(),
-    });
-  };
-
-  const calcFinalScore = (
-    aiScore,
-    confidence,
-    strokeEstimate,
-    targetMatch,
-    orientationOk,
-    isDoodle = false
-  ) => {
-    if (!orientationOk || !targetMatch || isDoodle) return 0;
-    const strokeMatchRatio =
-      (strokeEstimate - Math.abs(strokeEstimate - strokeCountRef.current)) /
-      strokeEstimate;
-    return aiScore * confidence * strokeMatchRatio;
-  };
-
-  const updatePoints = async () => {
-    if (
-      dbUserRef.current?.id &&
-      Array.isArray(dbUserRef.current.completed_words)
-    ) {
-      if (!dbUserRef.current.completed_words.includes(charData.id)) {
-        await updateUser(dbUserRef.current.id, {
-          points:
-            (dbUserRef.current.points || 0) +
-            charData.difficulty * POINTS_PER_WORD_PER_DIFFICULTY,
-          completed_words: [...dbUserRef.current.completed_words, charData.id],
-          last_word: charData.id,
-        });
-        updateNavScore(
-          (dbUserRef.current.points || 0) +
-            charData.difficulty * POINTS_PER_WORD_PER_DIFFICULTY
-        );
-
-        dbUserRef.current = await getUserById(dbUserRef.current.id);
-      }
-    }
-  };
-
-  const evaluate = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setResult(null);
-
-      if (!canvasHasInk(canvasRef.current)) {
-        setError("Please draw something before evaluating 🙂");
-        setShowModal(true);
-        return;
-      }
-
-      const dataUrl = canvasRef.current.toDataURL("image/png");
-      const res = await fetch("/api/eval-handwriting", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl, target: charData.content, StrokeCount: strokeCountRef.current}),
+    if (refs.writer) {
+      refs.writer.hideCharacter();
+      refs.writer.animateCharacter({
+        onComplete: () => refs.writer.hideCharacter(),
       });
-
-      const text = await res.text();
-      let parsed = null;
-      try {
-        parsed = JSON.parse(text);
-        console.log(parsed);
-      } catch {
-        // leave parsed as null
-      }
-
-      if (!res.ok) {
-        const msg =
-          (parsed && (parsed.detail || parsed.error || parsed.raw)) ||
-          text ||
-          "Request failed";
-        setError(String(msg));
-        setShowModal(true);
-        return;
-      }
-
-      if (
-        calcFinalScore(
-          parsed.score,
-          parsed.recognition_confidence,
-          parsed.stroke_estimate,
-          parsed.target_match,
-          parsed.orientation_ok,
-          parsed.is_doodle
-        ) >= SCORE_THRESHOLD
-      ) {
-        updatePoints();
-      }
-      setCanvasImage(dataUrl);
-      setResult({ parsed, raw: text });
-      setShowModal(true);
-    } catch (e) {
-      setError(String(e));
-      setShowModal(true);
-    } finally {
-      clearDrawing();
-      setLoading(false);
     }
+  };
+
+  // Character navigation
+  const findNextIncompleteChar = async (currentId, difficulty) => {
+    const completed = refs.dbUser?.completed_words ?? [];
+    const chars = await getDifficultyCharacter(difficulty);
+    const ids = chars.map((c) => c.id);
+    const currentIdx = ids.indexOf(currentId);
+
+    for (let i = 1; i <= ids.length; i++) {
+      const idx = (currentIdx + i) % ids.length;
+      if (!completed.includes(ids[idx])) {
+        return chars[idx];
+      }
+    }
+    return null;
   };
 
   const handleNextCharacter = async () => {
@@ -355,52 +288,45 @@ const PlayPage = ({ updateNavScore }) => {
     setShowModal(false);
 
     try {
-      const completed = dbUserRef.current?.completed_words ?? [];
-      const chars = await getDifficultyCharacter(charData.difficulty);
-      const ids = chars.map((c) => c.id);
-      const currentIdx = ids.indexOf(charData.id);
+      // Try to find next in current difficulty
+      let nextChar = await findNextIncompleteChar(
+        charData.id,
+        charData.difficulty
+      );
 
-      let nextId = null;
-      for (let i = 1; i <= ids.length; i++) {
-        const idx = (currentIdx + i) % ids.length;
-        if (!completed.includes(ids[idx])) {
-          nextId = ids[idx];
-          break;
-        }
-      }
-
-      if (nextId) {
-        handleCharacterChange(nextId);
+      if (nextChar) {
+        handleCharacterChange(nextChar.id);
         setLoading(false);
         return;
       }
 
-      const all = [];
+      // Find next across all difficulties
+      const allChars = [];
       for (const { key } of SORTED_DIFFICULTIES) {
-        const diffChars = await getDifficultyCharacter(key);
-        diffChars.forEach((c) => all.push({ ...c, difficulty: key }));
+        const chars = await getDifficultyCharacter(key);
+        chars.forEach((c) => allChars.push({ ...c, difficulty: key }));
       }
 
-      const currentGlobalIndex = all.findIndex((c) => c.id === charData.id);
+      const completed = refs.dbUser?.completed_words ?? [];
+      const currentIdx = allChars.findIndex((c) => c.id === charData.id);
 
-      let nextGlobalIndex = -1;
-      for (let i = 1; i <= all.length; i++) {
-        const idx = (currentGlobalIndex + i) % all.length;
-        if (!completed.includes(all[idx].id)) {
-          nextGlobalIndex = idx;
+      for (let i = 1; i <= allChars.length; i++) {
+        const idx = (currentIdx + i) % allChars.length;
+        if (!completed.includes(allChars[idx].id)) {
+          nextChar = allChars[idx];
           break;
         }
       }
 
-      const target = nextGlobalIndex === -1 ? all[0] : all[nextGlobalIndex];
+      if (!nextChar) nextChar = allChars[0];
 
-      if (target.difficulty !== charData.difficulty) {
-        await handleDifficultyChange(DIFFICULTIES[target.difficulty]);
+      if (nextChar.difficulty !== charData.difficulty) {
+        await handleDifficultyChange(DIFFICULTIES[nextChar.difficulty]);
       } else {
-        handleCharacterChange(target.id);
+        handleCharacterChange(nextChar.id);
       }
     } catch (err) {
-      console.error("Next-character error:", err);
+      console.error("Next character error:", err);
       setError(String(err));
       setShowModal(true);
     } finally {
@@ -418,49 +344,190 @@ const PlayPage = ({ updateNavScore }) => {
     setShowGrid(false);
   };
 
-  const handleDifficultyChange = async (newLevel) => {
-    setLoading(true);
-    const difficultyEntry = SORTED_DIFFICULTIES.find(
-      (d) => d.label === newLevel
-    );
-    if (difficultyEntry.key != charData.difficulty) {
-      try {
-        const chars = await getDifficultyCharacter(difficultyEntry.key);
+  // Mode and difficulty changes
+  const handleGameModeChange = async (newMode) => {
+    resetAll();
+    refs.gameMode = newMode;
 
-        if (chars && chars.length > 0) {
-          setCharData((prev) => ({
-            ...prev,
-            id: chars[0].id,
-            content: chars[0].content,
-            difficulty: difficultyEntry.key,
-            characters: chars.reduce((acc, char) => {
-              acc[char.id] = char.content;
-              return acc;
-            }, {}),
-          }));
+    if (newMode === "Standard") {
+      setIsTimerRunning(false);
+      const completed = refs.dbUser?.completed_words ?? [];
+      const chars = await getDifficultyCharacter(charData.difficulty);
+      let nextChar = chars[0];
+
+      for (const char of chars) {
+        if (!completed.includes(char.id)) {
+          nextChar = char;
+          break;
         }
-      } catch (err) {
-        console.error("Error loading characters:", err);
-        setError(String(err));
-        setShowModal(true);
       }
 
-      resetAll();
+      const charMap = chars.reduce((acc, char) => {
+        acc[char.id] = char.content;
+        return acc;
+      }, {});
+
+      setCharData({
+        id: nextChar.id,
+        content: nextChar.content,
+        difficulty: charData.difficulty,
+        characters: charMap,
+      });
+    } else {
+      const randomChars = getRandomChars(charData.characters, 5);
+      const firstId = Object.keys(randomChars)[0];
+
+      setCharData((prev) => ({
+        ...prev,
+        id: firstId,
+        content: randomChars[firstId],
+        characters: randomChars,
+      }));
+
+      setShowModal(true);
+      setTimeLeft(TEST_MODE_TIME);
     }
-    setLoading(false);
   };
 
+  const handleDifficultyChange = async (newLevel) => {
+    setLoading(true);
+    const diffEntry = SORTED_DIFFICULTIES.find((d) => d.label === newLevel);
+
+    if (diffEntry.key === charData.difficulty) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const chars = await getDifficultyCharacter(diffEntry.key);
+
+      if (chars?.length) {
+        const charMap = chars.reduce((acc, char) => {
+          acc[char.id] = char.content;
+          return acc;
+        }, {});
+
+        const isTestMode = refs.gameMode === "Test(5)";
+        const finalChars = isTestMode ? getRandomChars(charMap, 5) : charMap;
+        const firstEntry = Object.entries(finalChars)[0];
+
+        setCharData({
+          id: firstEntry[0],
+          content: firstEntry[1],
+          difficulty: diffEntry.key,
+          characters: finalChars,
+        });
+
+        resetAll();
+      }
+    } catch (err) {
+      console.error("Error loading characters:", err);
+      setError(String(err));
+      setShowModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Evaluation
+  const updatePoints = async () => {
+    if (refs.dbUser?.id && Array.isArray(refs.dbUser.completed_words)) {
+      if (!refs.dbUser.completed_words.includes(charData.id)) {
+        const points =
+          (refs.dbUser.points || 0) +
+          charData.difficulty * POINTS_PER_WORD_PER_DIFFICULTY;
+
+        await updateUser(refs.dbUser.id, {
+          points,
+          completed_words: [...refs.dbUser.completed_words, charData.id],
+          last_word: charData.id,
+        });
+
+        updateNavScore(points);
+        refs.dbUser = await getUserById(refs.dbUser.id);
+      }
+    }
+  };
+
+  const evaluate = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setResult(null);
+
+      if (!canvasHasInk(refs.canvas)) {
+        setError("Please draw something before evaluating 🙂");
+        setShowModal(true);
+        return;
+      }
+
+      const dataUrl = refs.canvas.toDataURL("image/png");
+      const res = await fetch("/api/eval-handwriting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: dataUrl,
+          target: charData.content,
+          StrokeCount: refs.strokeCount,
+        }),
+      });
+
+      let parsed = null;
+      const text = await res.text();
+
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        // Leave parsed as null
+      }
+
+      if (!res.ok) {
+        const msg =
+          parsed?.detail ||
+          parsed?.error ||
+          parsed?.raw ||
+          text ||
+          "Request failed";
+        throw new Error(String(msg));
+      }
+
+      const finalScore = calcFinalScore(
+        parsed.score,
+        parsed.recognition_confidence,
+        parsed.stroke_estimate,
+        parsed.target_match,
+        parsed.orientation_ok,
+        refs.strokeCount,
+        parsed.is_doodle
+      );
+
+      if (finalScore >= SCORE_THRESHOLD) {
+        await updatePoints();
+      }
+
+      setCanvasImage(dataUrl);
+      setResult({ parsed, raw: text });
+      setShowModal(true);
+    } catch (e) {
+      setError(String(e));
+      setShowModal(true);
+    } finally {
+      clearDrawing();
+      setLoading(false);
+    }
+  };
+
+  // Render
   return (
     <div className="bg-[var(--tertiary)] w-full h-screen">
       <div className="container m-auto pt-10 max-w-[620px]">
+        {/* Header */}
         <div className="flex justify-between pb-1">
           <div className="text-lg flex gap-2 items-center text-[var(--text)]">
-            Let's try a/an{" "}
+            Let's {refs.gameMode === "Standard" ? "try" : "test"} a/an{" "}
             <select
               value={DIFFICULTIES[charData.difficulty]}
-              onChange={(e) => {
-                handleDifficultyChange(e.target.value);
-              }}
+              onChange={(e) => handleDifficultyChange(e.target.value)}
               disabled={loading}
               className={`pl-2 !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white ${
                 loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
@@ -471,7 +538,7 @@ const PlayPage = ({ updateNavScore }) => {
                   {item.label}
                 </option>
               ))}
-            </select>{" "}
+            </select>
             character:
             <div className="relative">
               <button
@@ -486,14 +553,14 @@ const PlayPage = ({ updateNavScore }) => {
 
               {showGrid && (
                 <div
-                  ref={gridRef}
+                  ref={(el) => (refs.gridContainer = el)}
                   className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-20"
                 >
                   <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 w-sm lg:w-md">
                     {Object.entries(charData.characters).map(
-                      ([id, content], index) => (
+                      ([id, content]) => (
                         <button
-                          key={index}
+                          key={id}
                           onClick={() => handleCharacterChange(id)}
                           disabled={loading}
                           className={`relative !p-0 !m-0 text-lg font-bold rounded-sm border-1 transition-all ${
@@ -507,12 +574,12 @@ const PlayPage = ({ updateNavScore }) => {
                           }`}
                         >
                           {content}
-                          {/* ✅ Tiny checkmark badge */}
-                          {dbUserRef.current?.completed_words.includes(id) && (
-                            <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 bg-green-500 text-white text-[10px] rounded-full w-3 h-3 flex items-center justify-center shadow">
-                              ✓
-                            </span>
-                          )}
+                          {refs.gameMode === "Standard" &&
+                            refs.dbUser?.completed_words?.includes(id) && (
+                              <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 bg-green-500 text-white text-[10px] rounded-full w-3 h-3 flex items-center justify-center shadow">
+                                ✓
+                              </span>
+                            )}
                         </button>
                       )
                     )}
@@ -524,130 +591,172 @@ const PlayPage = ({ updateNavScore }) => {
           </div>
 
           <select
-            value={"Standard"}
+            value={refs.gameMode}
+            onChange={(e) => handleGameModeChange(e.target.value)}
             disabled={loading}
             className={`pl-2 text-black !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white ${
               loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
             }`}
           >
-            {GAME_MODE.map((item, index) => (
-              <option key={index} value={item}>
+            {GAME_MODE.map((item) => (
+              <option key={item} value={item}>
                 {item}
               </option>
             ))}
           </select>
         </div>
 
+        {/* Canvas Area */}
         <div className="relative min-h-[620px] bg-white rounded-md border-gray-300 border-dashed border-4">
-          {/* HanziWriter container - separate from canvas */}
-
           <div
-            ref={writerContainerRef}
+            ref={(el) => (refs.writerContainer = el)}
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
           />
 
-          <button
-            disabled={loading}
-            onClick={animate}
-            className={`bg-transparent z-10 right-2 top-2 absolute text-[var(--primary)] !p-0 ${
-              loading ? "!cursor-not-allowed opacity-50" : ""
-            }`}
-          >
-            <PlayCircle />
-          </button>
-          {/* Canvas for drawing */}
+          <div className="absolute right-2 top-2 z-10 flex gap-3 items-center">
+            {refs.gameMode === "Test(5)" ? (
+              <div className="text-sm font-semibold text-gray-700">
+                {Math.floor(timeLeft / 60)}:
+                {String(timeLeft % 60).padStart(2, "0")}
+              </div>
+            ) : (
+              <button
+                disabled={loading}
+                onClick={animate}
+                className={`bg-transparent !p-0 text-[var(--primary)] cursor-pointer`}
+              >
+                <PlayCircle />
+              </button>
+            )}
+          </div>
+
           <canvas
             width={CWIDTH}
             height={CHEIGHT}
-            ref={canvasRef}
+            ref={(el) => (refs.canvas = el)}
             style={{ touchAction: "none" }}
             className={`rounded-md m-auto !p-0 absolute top-0 !bg-transparent cursor-crosshair ${
               loading
                 ? "!cursor-not-allowed pointer-events-none opacity-50"
                 : ""
             }`}
-            onMouseDown={down}
-            onMouseMove={move}
-            onMouseUp={up}
-            onMouseLeave={up}
-            onTouchStart={down}
-            onTouchMove={move}
-            onTouchEnd={up}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleMouseDown}
+            onTouchMove={handleMouseMove}
+            onTouchEnd={handleMouseUp}
           />
         </div>
 
+        {/* Action Buttons */}
         <div className="flex justify-between pt-3">
-          <div className="flex gap-2">
-            <button
-              disabled={loading}
-              onClick={resetAll}
-              className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md blue-button ${
-                loading ? "!cursor-not-allowed opacity-50" : ""
-              }`}
-            >
-              Clear
-            </button>
-          </div>
-
           <button
             disabled={loading}
-            onClick={evaluate}
-            className={`bg-[var(--primary)] text-white !px-8 !rounded-md blue-button ${
+            onClick={resetAll}
+            className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md blue-button ${
               loading ? "!cursor-not-allowed opacity-50" : ""
             }`}
           >
-            {loading ? "Evaluating…" : "Evaluate"}
+            Clear
           </button>
+
+          {refs.gameMode === "Test(5)" ? (
+            <button
+              disabled={loading}
+              onClick={evaluate}
+              className={`bg-[var(--primary)] text-white !px-8 !rounded-md blue-button ${
+                loading ? "!cursor-not-allowed opacity-50" : ""
+              }`}
+            >
+              {Object.keys(charData.characters).at(-1) == charData.id
+                ? "Submit"
+                : "Next"}
+            </button>
+          ) : (
+            <button
+              disabled={loading}
+              onClick={evaluate}
+              className={`bg-[var(--primary)] text-white !px-8 !rounded-md blue-button ${
+                loading ? "!cursor-not-allowed opacity-50" : ""
+              }`}
+            >
+              {loading ? "Evaluating…" : "Evaluate"}
+            </button>
+          )}
         </div>
 
+        {/* Result Modal */}
         {showModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative">
               <button
-                onClick={resetAll}
+                onClick={() => {
+                  resetAll();
+                  if (refs.gameMode === "Test(5)") {
+                    handleGameModeChange("Standard");
+                  }
+                }}
                 className="absolute z-50 rounded-full !p-0 bg-white top-3 right-3 text-gray-500 hover:text-gray-700"
               >
                 <X size={18} />
               </button>
+
+              {/* Evaluation Modal */}
               {error ? (
                 <div className="text-black">
-                  <b>Error:</b> {error}
+                  <h2 className="text-2xl font-bold pb-2">
+                    Somethings wrong...
+                  </h2>{" "}
+                  {error}
                 </div>
               ) : result?.parsed ? (
                 <div className="space-y-3">
+                  <h2 className="text-2xl font-bold pb-2">
+                    {calcFinalScore(
+                      result.parsed.score,
+                      result.parsed.recognition_confidence,
+                      result.parsed.stroke_estimate,
+                      result.parsed.target_match,
+                      result.parsed.orientation_ok,
+                      refs.strokeCount,
+                      result.parsed.is_doodle
+                    ) >= SCORE_THRESHOLD
+                      ? "Nice!"
+                      : "Do better😞"}
+                  </h2>
                   <div className="flex justify-center p-0 border-gray-300 border-dashed border-3 rounded-md bg-gray-50 relative overflow-hidden">
-                    <img src={canvasImage}></img>
+                    <img src={canvasImage} alt="drawing" />
                   </div>
 
                   <div>
                     <p>
                       <b>Score:</b>{" "}
-                      {Number.isFinite(
-                        calcFinalScore(
+                      {(() => {
+                        const score = calcFinalScore(
                           result.parsed.score,
                           result.parsed.recognition_confidence,
                           result.parsed.stroke_estimate,
                           result.parsed.target_match,
                           result.parsed.orientation_ok,
+                          refs.strokeCount,
                           result.parsed.is_doodle
-                        )
-                      )
-                        ? `${
-                            Math.round(
-                              calcFinalScore(
-                                result.parsed.score,
-                                result.parsed.recognition_confidence,
-                                result.parsed.stroke_estimate,
-                                result.parsed.target_match,
-                                result.parsed.orientation_ok,
-                                result.parsed.is_doodle
-                              ) * 10
-                            ) / 10
-                          }/100`
-                        : "—"}
+                        );
+                        return Number.isFinite(score)
+                          ? `${Math.round(score * 10) / 10}/100${
+                              score >= SCORE_THRESHOLD
+                                ? ` (+${
+                                    charData.difficulty *
+                                    POINTS_PER_WORD_PER_DIFFICULTY
+                                  })`
+                                : ""
+                            }`
+                          : "—";
+                      })()}
                     </p>
                     <p>
-                      <b>Target: </b> {charData.content} (
+                      <b>Target:</b> {charData.content} (
                       {result.parsed.definition})
                     </p>
                     <p>
@@ -679,6 +788,41 @@ const PlayPage = ({ updateNavScore }) => {
                     </button>
                   </div>
                 </div>
+              ) : refs.gameMode === "Test(5)" ? (
+                <div className="space-y-4">
+                  <div class="">
+                    <h2 className="text-2xl font-bold pb-2">
+                      Welcome to Test Mode!
+                    </h2>
+                    <p className="">
+                      You’ve got {TEST_MODE_TIME} seconds to write 5 characters
+                      and score 1.5× points compared to Standard Mode—good luck
+                      😊!
+                    </p>
+                  </div>
+                  <div className="w-full flex justify-between items-center gap-3">
+                    <button
+                      onClick={() => {
+                        resetAll();
+                        handleGameModeChange("Standard");
+                      }}
+                      className={`bg-[var(--primary)] text-white !px-8 !rounded-md`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        resetAll();
+                        setTimeout(() => {
+                          setIsTimerRunning(true);
+                        }, 1200);
+                      }}
+                      className={`bg-[var(--primary)] text-white !px-8 !rounded-md`}
+                    >
+                      Start now
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div>
                   Could not parse JSON. <br />
@@ -693,9 +837,6 @@ const PlayPage = ({ updateNavScore }) => {
             </div>
           </div>
         )}
-        {/* <div className="mt-8 mb-12">
-          <BackButton />
-        </div> */}
       </div>
     </div>
   );
