@@ -4,6 +4,7 @@ import {
     getDifficultyCharacter
 } from "../firebase/database";
 import { getCurrentUser } from "./Login";
+import BackButton from "./BackButton"
 
 const DictionaryPage = () => {
   const [characters, setCharacters] = useState([]);
@@ -129,6 +130,10 @@ const DictionaryPage = () => {
             </div>
           </div>
         )}
+        {/* Back Button
+        <div className="mt-8 mb-12">
+          <BackButton />
+        </div> */}
       </main>
     </div>
   );
