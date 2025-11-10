@@ -1,3 +1,4 @@
+import argparse
 import firebase_admin
 import datetime
 import sys
@@ -157,6 +158,18 @@ def seed_character_table_jp(db, overwrite_all = False):
         raise
 
 def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        '--overwrite-all',
+        action='store_true',
+        help='If set, overwrite all characters in database (default: False)',
+    )
+    parser.add_argument('premium_level_start', type=int, help='Premium level start (integer)')
+
+    args = parser.parse_args()
+    overwrite_all = args.overwrite_all
+    premium_level_start = args.premium_level_start
     print("🌱 Starting Firebase ...")
 
     db = initialize_firebase()
