@@ -237,9 +237,10 @@ FEEDBACK RULES:
 
 ${extraInstruction}`.trim();
 
-  const strokeInfo = userStrokeCount !== null 
-    ? `\n\n**CRITICAL INFO**: User drew exactly ${userStrokeCount} stroke(s). You MUST check if this matches the required stroke count for the target character '${target}'.` 
-    : "";
+  const strokeInfo =
+    userStrokeCount !== null
+      ? `\n\n**CRITICAL INFO**: User drew exactly ${userStrokeCount} stroke(s). You MUST check if this matches the required stroke count for the target character '${target}'.`
+      : "";
 
   const userPrompt = `
 Target character: '${target || "(none)"}'${strokeInfo}
@@ -366,11 +367,11 @@ Return STRICT JSON:
 app.post("/api/eval-handwriting", async (req, res) => {
   try {
     const { image, target, StrokeCount, strokeCount } = req.body || {};
-    const userStrokeCount =
-
-     Number.isFinite(Number(StrokeCount)) ? Number(StrokeCount)
-     : Number.isFinite(Number(strokeCount)) ? Number(strokeCount)
-     : null;
+    const userStrokeCount = Number.isFinite(Number(StrokeCount))
+      ? Number(StrokeCount)
+      : Number.isFinite(Number(strokeCount))
+      ? Number(strokeCount)
+      : null;
 
     if (
       !image ||
@@ -388,7 +389,6 @@ app.post("/api/eval-handwriting", async (req, res) => {
         detail: "Missing GOOGLE_API_KEY (or GEMINI_API_KEY).",
       });
     }
-    
 
     const m = image.match(/^data:(.+?);base64,(.*)$/);
     if (!m)
@@ -480,7 +480,10 @@ app.post("/api/eval-handwriting", async (req, res) => {
       )}° indicates mismatch.`;
       finalScore = Math.min(finalScore, 10);
     }
-    if (Number.isFinite(userStrokeCount) && parsed?.stroke_count_correct === false) {
+    if (
+      Number.isFinite(userStrokeCount) &&
+      parsed?.stroke_count_correct === false
+    ) {
       const est = Number.isFinite(Number(parsed?.stroke_estimate))
         ? Number(parsed.stroke_estimate)
         : null;
@@ -514,8 +517,8 @@ app.post("/api/eval-handwriting", async (req, res) => {
       stroke_estimate: Number.isFinite(Number(parsed?.stroke_estimate))
         ? Number(parsed.stroke_estimate)
         : undefined,
-       stroke_count_correct:
-       typeof parsed?.stroke_count_correct === "boolean"
+      stroke_count_correct:
+        typeof parsed?.stroke_count_correct === "boolean"
           ? parsed.stroke_count_correct
           : undefined,
       dominant_angle_deg: orient?.angleDeg,
