@@ -82,7 +82,7 @@ const loginAnonymously = async () => {
     }
     const result = await signInAnonymously(auth);
 
-    return await createUserProfile(result.user);
+    // return await createUserProfile(result.user);
   } catch (error) {
     console.error(error);
   }

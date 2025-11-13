@@ -8,7 +8,6 @@ import {
 } from "react-router-dom";
 import { getAllUsers } from "../firebase/database";
 import { getCurrentUser } from "../firebase/auth";
-import BackButton from "./BackButton";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 
 const ScoreBoardPage = () => {
@@ -51,7 +50,6 @@ const ScoreBoardPage = () => {
         <h3 className="text-2xl font-bold text-center mb-20">
           Loading scoreboard...
         </h3>
-        {/* <BackButton /> */}
       </div>
     );
   }
@@ -63,7 +61,6 @@ const ScoreBoardPage = () => {
         <h3 className="text-2xl font-bold text-center mb-20">
           Error loading scoreboard: {error.message}
         </h3>
-        {/* <BackButton /> */}
       </div>
     );
   }
@@ -115,7 +112,6 @@ const ScoreBoardPage = () => {
             </tbody>
           </table>
         </div>
-        {/* <BackButton /> */}
       </div>
     </div>
   );
