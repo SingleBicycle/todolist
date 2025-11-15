@@ -83,6 +83,7 @@ def seed_character_table_ch(db, premium_level_start = 4, overwrite_all = False):
             char = char_information["hanzi"]
             if not overwrite_all and char in existing_chars_set:
                 print(f"Character '{char}' already exists, skipping...")
+                continue
             char_doc = char_information
             char_doc["meanings"] = char_doc.pop("translations")
             char_doc["difficulty"] = char_doc.pop("level")
@@ -123,8 +124,12 @@ def seed_character_table_jp(db, overwrite_all = False):
         for char, char_information in file_chars.items():
             if not overwrite_all and char in existing_chars_set:
                 print(f"Character '{char}' already exists, skipping...")
+                continue
+            if char_doc["jlpt_new"] is None:
+                print("Character '{char}' has no jlpt_new value, skipping")
+                continue
             char_doc = char_information
-            char_doc["difficulty"] = char_doc["jlpt_new"]
+            char_doc["difficulty"] = 6 - char_doc["jlpt_new"]
             char_doc["content"] = char,
             char_doc["is_premium"] = False,
             char_doc["created_at"] = datetime.datetime.now(datetime.timezone.utc),

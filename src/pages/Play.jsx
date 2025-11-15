@@ -18,16 +18,38 @@ const POINTS_PER_WORD_PER_DIFFICULTY = 30;
 const SCORE_THRESHOLD = 70;
 
 const GAME_MODE = ["Standard", "Test"];
-const DIFFICULTIES = {
-  1: "Easy",
-  2: "Okay",
-  3: "Med",
-  4: "Hard",
-  5: "So hard",
+
+const DIFFICULTY_MAPPINGS = {
+  Chinese: {
+    1: "HSK 1",
+    2: "HSK 2",
+    3: "HSK 3",
+    4: "HSK 4",
+    5: "HSK 5",
+    6: "HSK 6"
+  },
+  Japanese: {
+    1: "JLPT N5",
+    2: "JLPT N4",
+    3: "JLPT N3",
+    4: "JLPT N2",
+    5: "JLPT N1"
+  }
 };
-const SORTED_DIFFICULTIES = Object.keys(DIFFICULTIES)
-  .sort((a, b) => a - b)
-  .map((key) => ({ key: Number(key), label: DIFFICULTIES[key] }));
+
+const getDifficultyLabels = (language) => {
+  const difficulties = DIFFICULTY_MAPPINGS[language] || DIFFICULTY_MAPPINGS.Chinese;
+
+  return {
+    DIFFICULTIES: difficulties,
+    SORTED_DIFFICULTIES: Object.keys(difficulties)
+      .sort((a, b) => a - b)
+      .map((key) => ({
+        key: Number(key),
+        label: difficulties[key]
+      }))
+  };
+};
 
 const canvasHasInk = (canvas) => {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -64,6 +86,8 @@ const PlayPage = ({ updateNavScore }) => {
   const hasMoved = useRef(false); // NEW
   const last = useRef({ x: 0, y: 0 });
   const initialized = useRef(false);
+
+  const { DIFFICULTIES, SORTED_DIFFICULTIES } = getDifficultyLabels(language);
 
   // Initialize user data and load first character (init only ran once)
   useEffect(() => {
