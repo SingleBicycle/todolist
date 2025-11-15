@@ -120,8 +120,8 @@ const DictionaryPage = () => {
                     <div className="px-6 py-4 text-black">
                       Level {char.difficulty}
                     </div>
-                    <div className="px-6 py-4">
-                      
+                    <div className="px-6 py-4 text-black">
+                      {char.meanings.join("; ")}
                     </div>
                   </div>
                 ))
