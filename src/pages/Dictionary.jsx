@@ -66,17 +66,21 @@ const DictionaryPage = () => {
                 color: 'var(--text)'
               }}
             >
-              <option value="1">HSK 1</option>
-              <option value="2">HSK 2</option>
-              <option value="3">HSK 3</option>
-              <option value="4">HSK 4</option>
-              <option value="5">HSK 5</option>
-              <option value="6">HSK 6</option>
-              <option value="7">JLPT N1</option>
-              <option value="8">JLPT N2</option>
-              <option value="9">JLPT N3</option>
-              <option value="10">JLPT N4</option>
-              <option value="11">JLPT N5</option>
+              <optgroup label="Chinese">
+                <option value="1">HSK 1</option>
+                <option value="2">HSK 2</option>
+                <option value="3">HSK 3</option>
+                <option value="4">HSK 4</option>
+                <option value="5">HSK 5</option>
+                <option value="6">HSK 6</option>
+              </optgroup>
+              <optgroup label="Japanese">
+                <option value="7">JLPT N1</option>
+                <option value="8">JLPT N2</option>
+                <option value="9">JLPT N3</option>
+                <option value="10">JLPT N4</option>
+                <option value="11">JLPT N5</option>
+              </optgroup>
             </select>
           </div>
         </div>
