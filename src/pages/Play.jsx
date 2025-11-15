@@ -53,6 +53,7 @@ const PlayPage = ({ updateNavScore }) => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [language, setLanguage] = useState("chinese");
 
   const canvasRef = useRef(null);
   const modalCanvasRef = useRef(null);
@@ -73,11 +74,14 @@ const PlayPage = ({ updateNavScore }) => {
         let selectedDifficulty = 1;
         let selectedTarget = "";
         let selectedTargetId = "";
+        let initialLanguage = "";
 
         if (user?.uid) {
           // Authorized user
           const dbUser = await getUserById(user.uid);
           dbUserRef.current = dbUser;
+          initialLanguage = dbUser.language;
+          setLanguage(initialLanguage)
 
           if (dbUser?.last_word) {
             const lastCharacter = await getCharacterById(dbUser.last_word);
@@ -91,7 +95,7 @@ const PlayPage = ({ updateNavScore }) => {
         }
 
         // Load characters for the selected difficulty
-        const chars = await getDifficultyCharacter(selectedDifficulty);
+        const chars = await getDifficultyCharacter(selectedDifficulty, initialLanguage);
         if (chars && chars.length > 0) {
           setCharData((prev) => ({
             ...prev,
@@ -356,7 +360,7 @@ const PlayPage = ({ updateNavScore }) => {
 
     try {
       const completed = dbUserRef.current?.completed_words ?? [];
-      const chars = await getDifficultyCharacter(charData.difficulty);
+      const chars = await getDifficultyCharacter(charData.difficulty, language);
       const ids = chars.map((c) => c.id);
       const currentIdx = ids.indexOf(charData.id);
 
@@ -377,7 +381,7 @@ const PlayPage = ({ updateNavScore }) => {
 
       const all = [];
       for (const { key } of SORTED_DIFFICULTIES) {
-        const diffChars = await getDifficultyCharacter(key);
+        const diffChars = await getDifficultyCharacter(key, language);
         diffChars.forEach((c) => all.push({ ...c, difficulty: key }));
       }
 
@@ -425,7 +429,7 @@ const PlayPage = ({ updateNavScore }) => {
     );
     if (difficultyEntry.key != charData.difficulty) {
       try {
-        const chars = await getDifficultyCharacter(difficultyEntry.key);
+        const chars = await getDifficultyCharacter(difficultyEntry.key, language);
 
         if (chars && chars.length > 0) {
           setCharData((prev) => ({
