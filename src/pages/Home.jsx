@@ -56,7 +56,6 @@ const HomePage = () => {
           <div className="text-center p-8 w-full shadow-lg rounded-2xl bg-white flex items-center justify-center">
             <div>
               <img src={demoIllustration} alt="Demo Illustration" className="mb-4 h-48"/>
-              <span className="text-gray-600">[ Demo Illustration ]</span>
             </div>
           </div>
         </div>
