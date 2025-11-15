@@ -10,36 +10,21 @@ const DictionaryPage = () => {
   const [filteredCharacters, setFilteredCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState(1);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [charactersData, currentUser] = await Promise.all([
-          getAllCharacters(),
-          getCurrentUser()
-        ]);
-        setCharacters(charactersData);
-        setFilteredCharacters(charactersData);
-        setUser(currentUser);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    filterByDifficulty(selectedDifficulty);
   }, []);
 
   const filterByDifficulty = async (difficulty) => {
     setSelectedDifficulty(difficulty);
     setLoading(true);
     try {
-      if (difficulty === 'all') {
-        const allChars = await getAllCharacters();
-        setFilteredCharacters(allChars);
+      if (difficulty >= 1 && difficulty <= 6) {
+        const filtered = await getDifficultyCharacter(parseInt(difficulty), "chinese");
+        setFilteredCharacters(filtered);
       } else {
-        const filtered = await getDifficultyCharacter(parseInt(difficulty));
+        const filtered = await getDifficultyCharacter(parseInt(difficulty - 6), "japanese");
         setFilteredCharacters(filtered);
       }
     } catch (error) {
@@ -72,12 +57,17 @@ const DictionaryPage = () => {
                 color: 'var(--text)'
               }}
             >
-              <option value="all">All Difficulties</option>
-              <option value="1">Difficulty 1</option>
-              <option value="2">Difficulty 2</option>
-              <option value="3">Difficulty 3</option>
-              <option value="4">Difficulty 4</option>
-              <option value="5">Difficulty 5</option>
+              <option value="1">HSK 1</option>
+              <option value="2">HSK 2</option>
+              <option value="3">HSK 3</option>
+              <option value="4">HSK 4</option>
+              <option value="5">HSK 5</option>
+              <option value="6">HSK 6</option>
+              <option value="7">JLPT N1</option>
+              <option value="8">JLPT N2</option>
+              <option value="9">JLPT N3</option>
+              <option value="10">JLPT N4</option>
+              <option value="11">JLPT N5</option>
             </select>
           </div>
         </div>
