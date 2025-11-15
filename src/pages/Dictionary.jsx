@@ -5,6 +5,15 @@ import {
 } from "../firebase/database";
 import { getCurrentUser } from "./Login";
 
+function DifficultyText(props) {
+  const difficulty = props.difficulty;
+  const language = props.language;
+  if (language == "ch") {
+    return "HSK " + difficulty;
+  }
+  return "JLPT N" + difficulty;
+}
+
 const DictionaryPage = () => {
   const [characters, setCharacters] = useState([]);
   const [filteredCharacters, setFilteredCharacters] = useState([]);
@@ -108,7 +117,7 @@ const DictionaryPage = () => {
                       {char.content}
                     </div>
                     <div className="px-6 py-4 text-black">
-                      Level {char.difficulty}
+                      <DifficultyText difficulty={char.difficulty} language={char.language} />
                     </div>
                     <div className="px-6 py-4 text-black">
                       {char.meanings.join("; ")}
