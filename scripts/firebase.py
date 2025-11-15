@@ -84,6 +84,9 @@ def seed_character_table_ch(db, premium_level_start = 4, overwrite_all = False):
             if not overwrite_all and char in existing_chars_set:
                 print(f"Character '{char}' already exists, skipping...")
                 continue
+            if len(char) > 1:
+                print(f"Character '{char}' is above length 1, skipping...")
+                continue
             char_doc = char_information
             char_doc["meanings"] = char_doc.pop("translations")
             char_doc["difficulty"] = char_doc.pop("level")
