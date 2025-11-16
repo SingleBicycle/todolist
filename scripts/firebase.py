@@ -88,7 +88,7 @@ def seed_character_table_ch(db, premium_level_start = 4, overwrite_all = False):
                 print(f"Character '{char}' is above length 1, skipping...")
                 continue
             char_doc = char_information
-            char_doc["meanings"] = char_doc.pop("translations")
+            char_doc["meanings"] = [x for x in char_doc.pop("translations") if "[" not in x]
             char_doc["difficulty"] = char_doc.pop("level")
             char_doc["content"] = char,
             char_doc["is_premium"] = False,
