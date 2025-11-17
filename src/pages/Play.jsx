@@ -13,6 +13,7 @@ import { PlayCircle, X } from "lucide-react";
 const CWIDTH = 620;
 const CHEIGHT = 620;
 const POINTS_PER_WORD_PER_DIFFICULTY = 30;
+const TEST_MODE_TIME = 40;
 const TEST_MODE_POINT_MULTIPLIER = 1.5;
 const SCORE_THRESHOLD = 70;
 
@@ -110,7 +111,7 @@ const PlayPage = ({ updateNavScore }) => {
   const [showModal, setShowModal] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TEST_MODE_TIME);
-
+  const [language, setLanguage] = useState("chinese");
   const testModeRefs = useRef({
     scores: new Array(5).fill(0),
     images: new Array(5).fill(""),
@@ -157,11 +158,12 @@ const PlayPage = ({ updateNavScore }) => {
         let difficulty = 1;
         let target = "";
         let targetId = "";
-
+        let initialLanguage = "";
         if (user?.uid) {
           const dbUser = await getUserById(user.uid);
           refs.dbUser = dbUser;
-
+          initialLanguage = dbUser.language;
+          setLanguage(initialLanguage);
           if (dbUser?.last_word) {
             const lastChar = await getCharacterById(dbUser.last_word);
             if (lastChar) {
@@ -172,7 +174,7 @@ const PlayPage = ({ updateNavScore }) => {
           }
         }
 
-        const chars = await getDifficultyCharacter(difficulty);
+        const chars = await getDifficultyCharacter(difficulty, initialLanguage);
         if (chars?.length) {
           const charMap = chars.reduce((acc, char) => {
             acc[char.id] = char.content;
@@ -307,7 +309,7 @@ const PlayPage = ({ updateNavScore }) => {
   // Character navigation
   const findNextIncompleteChar = async (currentId, difficulty) => {
     const completed = refs.dbUser?.completed_words ?? [];
-    const chars = await getDifficultyCharacter(difficulty);
+    const chars = await getDifficultyCharacter(difficulty, language);
     const ids = chars.map((c) => c.id);
     const currentIdx = ids.indexOf(currentId);
 
@@ -349,7 +351,7 @@ const PlayPage = ({ updateNavScore }) => {
       // Find next across all difficulties
       const allChars = [];
       for (const { key } of SORTED_DIFFICULTIES) {
-        const chars = await getDifficultyCharacter(key);
+        const chars = await getDifficultyCharacter(key, language);
         chars.forEach((c) => allChars.push({ ...c, difficulty: key }));
       }
 
@@ -398,7 +400,7 @@ const PlayPage = ({ updateNavScore }) => {
     if (newMode === "Standard") {
       setIsTimerRunning(false);
       const completed = refs.dbUser?.completed_words ?? [];
-      const chars = await getDifficultyCharacter(charData.difficulty);
+      const chars = await getDifficultyCharacter(charData.difficulty, language);
       let nextChar = chars[0];
 
       for (const char of chars) {
@@ -446,7 +448,7 @@ const PlayPage = ({ updateNavScore }) => {
     }
 
     try {
-      const chars = await getDifficultyCharacter(diffEntry.key);
+      const chars = await getDifficultyCharacter(diffEntry.key, language);
 
       if (chars?.length) {
         const charMap = chars.reduce((acc, char) => {
