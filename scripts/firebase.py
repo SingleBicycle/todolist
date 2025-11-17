@@ -1,7 +1,6 @@
 import argparse
 import firebase_admin
 import datetime
-import sys
 import json
 from firebase_admin import credentials, firestore
 
@@ -66,11 +65,8 @@ def batch_insert(db, new_characters):
         print("ℹ️ No new characters to add")
     return successful, failed
 
-def seed_character_table_ch(db, characters_by_difficulty, premium_level_start = 4, overwrite_all = False):
+def seed_character_table_ch(db, premium_level_start = 4, overwrite_all = False):
     try:
-        if overwrite_all:
-            delete_table(db, "characters")
-
         new_characters = []
         existing_chars_set = set()
         
@@ -80,30 +76,28 @@ def seed_character_table_ch(db, characters_by_difficulty, premium_level_start = 
             existing_chars_set = {doc.get("content") for doc in existing_chars_query if doc.get("language") == "ch"}
             print(f"ℹ️ Found {len(existing_chars_set)} existing characters")
         
-        for diff, chars in characters_by_difficulty.items():
-            difficulty_count = 0
-            
-            for _, ch in enumerate(chars):
-                # Skip if character already exists (unless overwriting)
-                if not overwrite_all and ch in existing_chars_set:
-                    print(f"⏭️ Character '{ch}' already exists, skipping...")
-                    continue
-                
-                char_doc = {
-                    "difficulty": diff,
-                    "content": ch,
-                    "is_premium": diff >= premium_level_start,
-                    "created_at": datetime.datetime.now(datetime.timezone.utc),
-                    "language": "ch"
-                }
-                
-                new_characters.append(char_doc)
-                difficulty_count += 1
-            
-                print(f"📋 Prepared {difficulty_count} characters for difficulty level {diff}")
-        
+        # https://github.com/KevinVR/hsk-json-list/blob/master/hsk.json
+        with open("hsk.json","r") as f:
+            file_chars = json.load(f)
+        for char_information in file_chars:
+            char = char_information["hanzi"]
+            if not overwrite_all and char in existing_chars_set:
+                print(f"Character '{char}' already exists, skipping...")
+                continue
+            if len(char) > 1:
+                print(f"Character '{char}' is above length 1, skipping...")
+                continue
+            char_doc = char_information
+            char_doc["meanings"] = [x for x in char_doc.pop("translations") if "[" not in x]
+            char_doc["difficulty"] = char_doc.pop("level")
+            char_doc["content"] = char,
+            char_doc["is_premium"] = False,
+            char_doc["created_at"] = datetime.datetime.now(datetime.timezone.utc),
+            char_doc["language"] = "ch"
+            new_characters.append(char_doc)
+        print(f"Prepared {len(new_characters)}")
+
         successful, failed = batch_insert(db, new_characters)
-        
         # Summary
         print(f"\n📊 Character seeding summary:")
         print(f"   • Successfully added: {successful}")
@@ -111,16 +105,14 @@ def seed_character_table_ch(db, characters_by_difficulty, premium_level_start = 
         if not overwrite_all:
             print(f"   • Already existed: {len(existing_chars_set)}")
         print(f"   • Total in database: {successful + (0 if overwrite_all else len(existing_chars_set))}")
-        
+
     except Exception as e:
-        print(f"❌ Error in seed_character_table_ch: {e}")
+        print(f"Error in seed_character_table_ch: {e}")
         raise
+
 
 def seed_character_table_jp(db, overwrite_all = False):
     try:
-        if overwrite_all:
-            delete_table(db, "characters")
-
         new_characters = []
         existing_chars_set = set()
         if not overwrite_all:
@@ -135,8 +127,12 @@ def seed_character_table_jp(db, overwrite_all = False):
         for char, char_information in file_chars.items():
             if not overwrite_all and char in existing_chars_set:
                 print(f"Character '{char}' already exists, skipping...")
+                continue
+            if char_doc["jlpt_new"] is None:
+                print("Character '{char}' has no jlpt_new value, skipping")
+                continue
             char_doc = char_information
-            char_doc["difficulty"] = char_doc["jlpt_new"]
+            char_doc["difficulty"] = 6 - char_doc["jlpt_new"]
             char_doc["content"] = char,
             char_doc["is_premium"] = False,
             char_doc["created_at"] = datetime.datetime.now(datetime.timezone.utc),
@@ -176,18 +172,12 @@ def main():
     if not db:
         print('Cannot initialize database')
         return
-    
-    overwrite_all, premium_level_start = sys.argv[1], sys.argv[2]
 
-    characters_by_difficulty_ch = {
-        1: list("一二三四五六七八九十大小山水火木金土日月人口手足心目耳鼻头身女男田米禾竹石云"),
-        2: list("我你他她们这那时间学校老师学生朋友家爸妈哥姐弟妹工作生活来去吃喝看听说读写"),
-        3: list("朋友学习校老师同家庭国孩子教作时间生活世界父母兄弟姐妹高兴说话读书写字"),
-        4: list("电脑话视图书音乐影问题社会历文化语言科学艺术新闻网络信息游戏运动健康旅游"),
-        5: list("经济发展环境教育政治法律哲学心理文学数理化学生物技术国际全球未来知识创新研究")
-    }
+    if overwrite_all:
+        delete_table(db, "characters")
+
     print("Inserting Chinese characters")
-    seed_character_table_ch(db, characters_by_difficulty_ch, int(premium_level_start), overwrite_all == "1")
+    seed_character_table_ch(db, int(premium_level_start), overwrite_all)
     print("Inserting Japanese characters")
     seed_character_table_jp(db, overwrite_all)
 

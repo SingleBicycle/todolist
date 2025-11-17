@@ -111,9 +111,14 @@ export async function getRandomCharacter() {
   return all[randomIndex];
 }
 
-export async function getDifficultyCharacter(level) {
+export async function getDifficultyCharacter(level, language) {
+  if (language.toLowerCase() == "chinese") {
+    language = "ch";
+  } else if (language.toLowerCase() == "japanese") {
+    language = "jp";
+  }
   const diff = await getAllCharacters();
-  return diff.filter((char) => char.difficulty === level);
+  return diff.filter((char) => char.difficulty === level && char.language === language);
 }
 
 export { getUserById, getAllUsers, updateUser, deleteUser };
