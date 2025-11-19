@@ -22,7 +22,6 @@ const createUserProfile = async (user) => {
 
     if (!userSnap.exists()) {
       // Create new user profile with default values if user does not exist
-      console.log("User does not exist, creating profile for " + user.email);
       await setDoc(userRef, {
         email: user.email || "",
         photo_url: user.photoURL,
@@ -30,7 +29,7 @@ const createUserProfile = async (user) => {
         last_name: user.displayName ? user.displayName.split(" ")[1] || "" : "",
         is_admin: false,
         points: 0,
-        last_word: "f8RFmT84ejlJTKKrnMVh", // default to 1 as the last word: 一
+        last_word: "2UrPjFYn9j62Q1K29AyW",
         completed_words: [],
         is_on_random_mode: false,
         last_login_at: timestamp,
@@ -38,11 +37,9 @@ const createUserProfile = async (user) => {
         created_at: timestamp,
       });
     } else {
-      // Update existing fields
-      console.log("User exists, updating last login timestamp")
       await updateDoc(userRef, {
         photo_url: user.photoURL,
-        last_login_at: timestamp
+        last_login_at: timestamp,
       });
     }
 

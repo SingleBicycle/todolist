@@ -1,15 +1,33 @@
 import React, { useState, useEffect } from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Link,
-  useNavigate,
-} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getAllUsers } from "../firebase/database";
 import { getCurrentUser } from "../firebase/auth";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
+const formatRelativeTime = (timestamp) => {
+  if (!timestamp) return "Never";
 
+  const now = Date.now();
+  const then = timestamp * 1000;
+  const diff = now - then;
+
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+
+  // Fall back to date format for older timestamps
+  const date = new Date(then);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
 const ScoreBoardPage = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
@@ -105,7 +123,7 @@ const ScoreBoardPage = () => {
                     />{" "}
                     {user.username || "No username"}
                   </td>
-                  <td>{user.last_played_at || "Never"}</td>
+                  <td>{formatRelativeTime(user.last_played_at) || "Never"}</td>
                   <td>{user.points || 0}</td>
                 </tr>
               ))}

@@ -82,9 +82,11 @@ async function deleteUser(uid) {
 
 export async function getCharacterById(characterid) {
   try {
-    const charDoc = await getDoc(doc(db, "characters", characterid));
+    const charRef = doc(db, "characters", characterid);
+    const charDoc = await getDoc(charRef);
+
     if (charDoc.exists()) {
-      return { id: charDoc.characterid, ...charDoc.data() };
+      return { id: charDoc.id, ...charDoc.data() };
     } else {
       return null;
     }
