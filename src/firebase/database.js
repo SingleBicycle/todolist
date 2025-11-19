@@ -8,13 +8,6 @@ import {
 } from "firebase/firestore";
 import { db } from "./config";
 
-// ------------------
-// Users
-// ------------------
-
-// Create should be handled by auth.js by logging in
-
-// Read
 async function getUserById(uid) {
   try {
     const userDoc = await getDoc(doc(db, "users", uid));
@@ -106,21 +99,29 @@ export async function getAllCharacters() {
   }
 }
 
-export async function getRandomCharacter() {
-  const all = await getAllCharacters();
-  if (all.length === 0) return null;
-  const randomIndex = Math.floor(Math.random() * all.length);
-  return all[randomIndex];
-}
-
+const cache = {};
 export async function getDifficultyCharacter(level, language) {
   if (language.toLowerCase() == "chinese") {
     language = "ch";
   } else if (language.toLowerCase() == "japanese") {
     language = "jp";
   }
-  const diff = await getAllCharacters();
-  return diff.filter((char) => char.difficulty === level && char.language === language);
+
+  const cacheKey = `${level}-${language}`;
+
+  if (cache[cacheKey]) {
+    return cache[cacheKey];
+  }
+
+  const query = db
+    .collection("characters")
+    .where("difficulty", "==", level)
+    .where("language", "==", language);
+  const snapshot = await query.get();
+  const result = snapshot.docs.map((doc) => doc.data());
+
+  cache[cacheKey] = result;
+  return result;
 }
 
 export { getUserById, getAllUsers, updateUser, deleteUser };
