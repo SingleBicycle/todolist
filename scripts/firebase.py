@@ -128,10 +128,10 @@ def seed_character_table_jp(db, overwrite_all = False):
             if not overwrite_all and char in existing_chars_set:
                 print(f"Character '{char}' already exists, skipping...")
                 continue
-            if char_doc["jlpt_new"] is None:
-                print("Character '{char}' has no jlpt_new value, skipping")
-                continue
             char_doc = char_information
+            if char_doc["jlpt_new"] is None:
+                print(f"Character '{char}' has no jlpt_new value, skipping")
+                continue
             char_doc["difficulty"] = 6 - char_doc["jlpt_new"]
             char_doc["content"] = char,
             char_doc["is_premium"] = False,
