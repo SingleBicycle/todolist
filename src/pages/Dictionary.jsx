@@ -11,7 +11,7 @@ function DifficultyText(props) {
   if (language == "ch") {
     return "HSK " + difficulty;
   }
-  return "JLPT N" + difficulty;
+  return "JLPT N" + (6 - difficulty);
 }
 
 const DictionaryPage = () => {
@@ -33,7 +33,7 @@ const DictionaryPage = () => {
         const filtered = await getDifficultyCharacter(parseInt(difficulty), "chinese");
         setFilteredCharacters(filtered);
       } else {
-        const filtered = await getDifficultyCharacter(parseInt(difficulty - 6), "japanese");
+        const filtered = await getDifficultyCharacter(parseInt(12 - difficulty), "japanese");
         setFilteredCharacters(filtered);
       }
     } catch (error) {
