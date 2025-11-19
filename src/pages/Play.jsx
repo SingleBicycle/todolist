@@ -8,7 +8,7 @@ import {
   updateUser,
 } from "../firebase/database";
 import { PlayCircle, X } from "lucide-react";
-import BackButton from "./BackButton";
+
 
 const CWIDTH = 620;
 const CHEIGHT = 620;
@@ -18,16 +18,38 @@ const POINTS_PER_WORD_PER_DIFFICULTY = 30;
 const SCORE_THRESHOLD = 70;
 
 const GAME_MODE = ["Standard", "Test"];
-const DIFFICULTIES = {
-  1: "Easy",
-  2: "Okay",
-  3: "Med",
-  4: "Hard",
-  5: "So hard",
+
+const DIFFICULTY_MAPPINGS = {
+  Chinese: {
+    1: "HSK 1",
+    2: "HSK 2",
+    3: "HSK 3",
+    4: "HSK 4",
+    5: "HSK 5",
+    6: "HSK 6"
+  },
+  Japanese: {
+    1: "JLPT N5",
+    2: "JLPT N4",
+    3: "JLPT N3",
+    4: "JLPT N2",
+    5: "JLPT N1"
+  }
 };
-const SORTED_DIFFICULTIES = Object.keys(DIFFICULTIES)
-  .sort((a, b) => a - b)
-  .map((key) => ({ key: Number(key), label: DIFFICULTIES[key] }));
+
+const getDifficultyLabels = (language) => {
+  const difficulties = DIFFICULTY_MAPPINGS[language] || DIFFICULTY_MAPPINGS.Chinese;
+
+  return {
+    DIFFICULTIES: difficulties,
+    SORTED_DIFFICULTIES: Object.keys(difficulties)
+      .sort((a, b) => a - b)
+      .map((key) => ({
+        key: Number(key),
+        label: difficulties[key]
+      }))
+  };
+};
 
 const canvasHasInk = (canvas) => {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -53,6 +75,7 @@ const PlayPage = ({ updateNavScore }) => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [language, setLanguage] = useState("chinese");
 
   const canvasRef = useRef(null);
   const modalCanvasRef = useRef(null);
@@ -64,6 +87,8 @@ const PlayPage = ({ updateNavScore }) => {
   const last = useRef({ x: 0, y: 0 });
   const initialized = useRef(false);
 
+  const { DIFFICULTIES, SORTED_DIFFICULTIES } = getDifficultyLabels(language);
+
   // Initialize user data and load first character (init only ran once)
   useEffect(() => {
     const init = async () => {
@@ -73,11 +98,14 @@ const PlayPage = ({ updateNavScore }) => {
         let selectedDifficulty = 1;
         let selectedTarget = "";
         let selectedTargetId = "";
+        let initialLanguage = "";
 
         if (user?.uid) {
           // Authorized user
           const dbUser = await getUserById(user.uid);
           dbUserRef.current = dbUser;
+          initialLanguage = dbUser.language;
+          setLanguage(initialLanguage)
 
           if (dbUser?.last_word) {
             const lastCharacter = await getCharacterById(dbUser.last_word);
@@ -91,7 +119,7 @@ const PlayPage = ({ updateNavScore }) => {
         }
 
         // Load characters for the selected difficulty
-        const chars = await getDifficultyCharacter(selectedDifficulty);
+        const chars = await getDifficultyCharacter(selectedDifficulty, initialLanguage);
         if (chars && chars.length > 0) {
           setCharData((prev) => ({
             ...prev,
@@ -356,7 +384,7 @@ const PlayPage = ({ updateNavScore }) => {
 
     try {
       const completed = dbUserRef.current?.completed_words ?? [];
-      const chars = await getDifficultyCharacter(charData.difficulty);
+      const chars = await getDifficultyCharacter(charData.difficulty, language);
       const ids = chars.map((c) => c.id);
       const currentIdx = ids.indexOf(charData.id);
 
@@ -377,7 +405,7 @@ const PlayPage = ({ updateNavScore }) => {
 
       const all = [];
       for (const { key } of SORTED_DIFFICULTIES) {
-        const diffChars = await getDifficultyCharacter(key);
+        const diffChars = await getDifficultyCharacter(key, language);
         diffChars.forEach((c) => all.push({ ...c, difficulty: key }));
       }
 
@@ -425,7 +453,7 @@ const PlayPage = ({ updateNavScore }) => {
     );
     if (difficultyEntry.key != charData.difficulty) {
       try {
-        const chars = await getDifficultyCharacter(difficultyEntry.key);
+        const chars = await getDifficultyCharacter(difficultyEntry.key, language);
 
         if (chars && chars.length > 0) {
           setCharData((prev) => ({
@@ -451,10 +479,10 @@ const PlayPage = ({ updateNavScore }) => {
   };
 
   return (
-    <div className="bg-[var(--tertiary)] w-full h-screen">
-      <div className="container m-auto pt-10 max-w-[620px]">
-        <div className="flex justify-between pb-1">
-          <div className="text-lg flex gap-2 items-center text-[var(--text)]">
+    <div className="bg-[var(--tertiary)] w-full min-h-screen overflow-x-hidden pb-8">
+      <div className="container m-auto pt-4 sm:pt-10 px-4 max-w-[620px]">
+        <div className="flex flex-col sm:flex-row justify-between pb-3 sm:pb-1 gap-3 sm:gap-0">
+          <div className="text-sm sm:text-lg flex flex-wrap gap-2 items-center text-[var(--text)]">
             Let's try a/an{" "}
             <select
               value={DIFFICULTIES[charData.difficulty]}
@@ -487,9 +515,9 @@ const PlayPage = ({ updateNavScore }) => {
               {showGrid && (
                 <div
                   ref={gridRef}
-                  className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-20"
+                  className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-20 max-h-[300px] overflow-y-auto"
                 >
-                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 w-sm lg:w-md">
+                  <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-5 gap-2 w-[200px] sm:w-auto">
                     {Object.entries(charData.characters).map(
                       ([id, content], index) => (
                         <button
@@ -526,7 +554,7 @@ const PlayPage = ({ updateNavScore }) => {
           <select
             value={"Standard"}
             disabled={loading}
-            className={`pl-2 text-black !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white ${
+            className={`pl-2 text-black !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white w-full sm:w-auto ${
               loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
             }`}
           >
@@ -538,7 +566,7 @@ const PlayPage = ({ updateNavScore }) => {
           </select>
         </div>
 
-        <div className="relative min-h-[620px] bg-white rounded-md border-gray-300 border-dashed border-4">
+        <div className="relative aspect-square w-full max-w-[620px] bg-white rounded-md border-gray-300 border-dashed border-4 overflow-hidden">
           {/* HanziWriter container - separate from canvas */}
 
           <div
@@ -553,7 +581,7 @@ const PlayPage = ({ updateNavScore }) => {
               loading ? "!cursor-not-allowed opacity-50" : ""
             }`}
           >
-            <PlayCircle />
+            <PlayCircle className="w-6 h-6 sm:w-8 sm:h-8" />
           </button>
           {/* Canvas for drawing */}
           <canvas
@@ -561,7 +589,7 @@ const PlayPage = ({ updateNavScore }) => {
             height={CHEIGHT}
             ref={canvasRef}
             style={{ touchAction: "none" }}
-            className={`rounded-md m-auto !p-0 absolute top-0 !bg-transparent cursor-crosshair ${
+            className={`rounded-md m-auto !p-0 absolute top-0 left-0 w-full h-full !bg-transparent cursor-crosshair ${
               loading
                 ? "!cursor-not-allowed pointer-events-none opacity-50"
                 : ""
@@ -576,8 +604,8 @@ const PlayPage = ({ updateNavScore }) => {
           />
         </div>
 
-        <div className="flex justify-between pt-3">
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row justify-between pt-3 gap-3">
+          <div className="flex gap-2 justify-center sm:justify-start">
             <button
               disabled={loading}
               onClick={resetAll}
@@ -601,8 +629,8 @@ const PlayPage = ({ updateNavScore }) => {
         </div>
 
         {showModal && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative">
+          <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative max-h-[90vh] overflow-y-auto">
               <button
                 onClick={resetAll}
                 className="absolute z-50 rounded-full !p-0 bg-white top-3 right-3 text-gray-500 hover:text-gray-700"
@@ -616,10 +644,10 @@ const PlayPage = ({ updateNavScore }) => {
               ) : result?.parsed ? (
                 <div className="space-y-3">
                   <div className="flex justify-center p-0 border-gray-300 border-dashed border-3 rounded-md bg-gray-50 relative overflow-hidden">
-                    <img src={canvasImage}></img>
+                    <img src={canvasImage} className="w-full h-auto" alt="Your drawing"></img>
                   </div>
 
-                  <div>
+                  <div className="text-sm sm:text-base">
                     <p>
                       <b>Score:</b>{" "}
                       {Number.isFinite(
@@ -658,11 +686,11 @@ const PlayPage = ({ updateNavScore }) => {
                     </p>
                   </div>
 
-                  <div className="w-full flex justify-between items-center gap-3">
+                  <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-3">
                     <button
                       disabled={loading}
                       onClick={resetAll}
-                      className={`bg-[var(--primary)] text-white !px-8 !rounded-md ${
+                      className={`w-full sm:w-auto bg-[var(--primary)] text-white !px-8 !rounded-md ${
                         loading ? "!cursor-not-allowed opacity-50" : ""
                       }`}
                     >
@@ -671,7 +699,7 @@ const PlayPage = ({ updateNavScore }) => {
                     <button
                       disabled={loading}
                       onClick={handleNextCharacter}
-                      className={`bg-[var(--primary)] text-white !px-8 !rounded-md ${
+                      className={`w-full sm:w-auto bg-[var(--primary)] text-white !px-8 !rounded-md ${
                         loading ? "!cursor-not-allowed opacity-50" : ""
                       }`}
                     >
@@ -680,10 +708,10 @@ const PlayPage = ({ updateNavScore }) => {
                   </div>
                 </div>
               ) : (
-                <div>
+                <div className="text-sm">
                   Could not parse JSON. <br />
                   Raw response:
-                  <pre className="mt-2 p-2 bg-gray-100 rounded text-sm max-h-40 overflow-auto">
+                  <pre className="mt-2 p-2 bg-gray-100 rounded text-xs max-h-40 overflow-auto">
                     {typeof result?.raw === "string" && result.raw.length
                       ? result.raw
                       : "—"}
@@ -693,9 +721,6 @@ const PlayPage = ({ updateNavScore }) => {
             </div>
           </div>
         )}
-        {/* <div className="mt-8 mb-12">
-          <BackButton />
-        </div> */}
       </div>
     </div>
   );
