@@ -12,7 +12,7 @@ export function testtHanziWriter(div, char) {
       showOutline: true,
       showCharacter: false,
       strokeAnimationSpeed: 2,
-      delayBetweenStrokes: 400,
+      delayBetweenStrokes: 300,
     });
   } else {
     cachedWriter.setCharacter(char); // <── cheap, no DOM rebuild

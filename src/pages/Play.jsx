@@ -7,8 +7,11 @@ import {
   getUserById,
   updateUser,
 } from "../firebase/database";
-import { PlayCircle, X } from "lucide-react";
-
+import "react-slideshow-image/dist/styles.css";
+import { ChevronLeft, ChevronRight, PlayCircle, X } from "lucide-react";
+import { GoogleGenAI } from "@google/genai";
+import { Slide } from "react-slideshow-image";
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 // Constants
 const CWIDTH = 620;
 const CHEIGHT = 620;
@@ -79,19 +82,9 @@ const getRandomChars = (charObj, count = 5) => {
   return Object.fromEntries(shuffled.slice(0, count));
 };
 
-const calcFinalScore = (
-  aiScore,
-  confidence,
-  strokeEstimate,
-  targetMatch,
-  orientationOk,
-  strokeCount,
-  isDoodle = false
-) => {
-  if (!orientationOk || !targetMatch || isDoodle) return 0;
-  const strokeMatchRatio =
-    (strokeEstimate - Math.abs(strokeEstimate - strokeCount)) / strokeEstimate;
-  return aiScore * confidence * strokeMatchRatio;
+const calcFinalScore = (score, confidence, stroke, expectedStroke) => {
+  const finalScore = score * confidence * (stroke / expectedStroke);
+  return finalScore;
 };
 
 // Main Component
@@ -101,28 +94,22 @@ const PlayPage = ({ updateNavScore }) => {
     id: "",
     content: "",
     difficulty: 1,
+    showCharacters: {},
     characters: {},
   });
   const [loading, setLoading] = useState(false);
 
-  const [result, setResult] = useState(null);
+  // const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-
   const [showModal, setShowModal] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TEST_MODE_TIME);
   const [language, setLanguage] = useState("chinese");
-  const testModeRefs = useRef({
-    scores: new Array(5).fill(0),
-    images: new Array(5).fill(""),
-    targets: new Array(5).fill(""),
-    strokeCounts: new Array(5).fill(0),
-    recognized: new Array(5).fill("-"),
-    feedbacks: new Array(5).fill("No feedbacks"),
-  });
+
+  const finalScore = useRef(0);
   const refs = useRef({
     canvas: null,
-    image: null,
+    images: new Array(5).fill(""),
     modalCanvas: null,
     writer: null,
     writerContainer: null,
@@ -135,6 +122,7 @@ const PlayPage = ({ updateNavScore }) => {
     hasMoved: false,
     lastPos: { x: 0, y: 0 },
     initialized: false,
+    results: [], //{score: , confidence: , feedback: , target: }
   }).current;
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
@@ -161,6 +149,10 @@ const PlayPage = ({ updateNavScore }) => {
         let initialLanguage = "";
         if (user?.uid) {
           const dbUser = await getUserById(user.uid);
+          const date = new Date();
+          await updateUser(user.uid, {
+            last_played_at: Math.floor(date.getTime() / 1000),
+          });
           refs.dbUser = dbUser;
           initialLanguage = dbUser.language;
           setLanguage(initialLanguage);
@@ -186,6 +178,7 @@ const PlayPage = ({ updateNavScore }) => {
             content: target,
             difficulty,
             characters: charMap,
+            showCharacters: charMap,
           });
         } else {
           throw new Error("No characters available for this difficulty");
@@ -285,15 +278,12 @@ const PlayPage = ({ updateNavScore }) => {
 
   const resetAll = () => {
     clearDrawing();
-    setResult(null);
     setError(null);
     setShowModal(false);
-    testModeRefs.current.scores.fill(0);
-    testModeRefs.current.images.fill("");
-    testModeRefs.current.strokeCounts.fill(0);
-    testModeRefs.current.targets.fill("");
-    testModeRefs.current.recognized.fill("-");
-    testModeRefs.current.feedbacks.fill("No feedbacks");
+    setTimeLeft(TEST_MODE_TIME);
+    setIsTimerRunning(false);
+    refs.results = [];
+    refs.images = new Array(5).fill("");
     refs.strokeCount = 0;
   };
 
@@ -330,8 +320,8 @@ const PlayPage = ({ updateNavScore }) => {
       // Try to find next in current difficulty
       let nextChar = null;
 
-      if (refs.gameMode === "Test(5)") {
-        const charArr = Object.keys(charData.characters);
+      if (refs.gameMode === "Test") {
+        const charArr = Object.keys(charData.showCharacters);
         const curIndex = charArr.indexOf(charData.id);
         const nextIndex = (curIndex + 1) % charArr.length;
         nextChar = { id: charArr[nextIndex] };
@@ -398,7 +388,6 @@ const PlayPage = ({ updateNavScore }) => {
     refs.gameMode = newMode;
 
     if (newMode === "Standard") {
-      setIsTimerRunning(false);
       const completed = refs.dbUser?.completed_words ?? [];
       const chars = await getDifficultyCharacter(charData.difficulty, language);
       let nextChar = chars[0];
@@ -420,18 +409,17 @@ const PlayPage = ({ updateNavScore }) => {
         content: nextChar.content,
         difficulty: charData.difficulty,
         characters: charMap,
+        showCharacters: charMap,
       });
     } else {
       const randomChars = getRandomChars(charData.characters, 5);
       const firstId = Object.keys(randomChars)[0];
-      //TODO: fill in stroke count as well
-      testModeRefs.current.targets = Object.values(randomChars);
 
       setCharData((prev) => ({
         ...prev,
         id: firstId,
         content: randomChars[firstId],
-        characters: randomChars,
+        showCharacters: randomChars,
       }));
       setShowModal(true);
       setTimeLeft(TEST_MODE_TIME);
@@ -441,8 +429,8 @@ const PlayPage = ({ updateNavScore }) => {
   const handleDifficultyChange = async (newLevel) => {
     setLoading(true);
     const diffEntry = SORTED_DIFFICULTIES.find((d) => d.label === newLevel);
-
-    if (diffEntry.key === charData.difficulty) {
+    const isTestMode = refs.gameMode === "Test";
+    if (diffEntry.key === charData.difficulty && !isTestMode) {
       setLoading(false);
       return;
     }
@@ -456,7 +444,6 @@ const PlayPage = ({ updateNavScore }) => {
           return acc;
         }, {});
 
-        const isTestMode = refs.gameMode === "Test(5)";
         const finalChars = isTestMode ? getRandomChars(charMap, 5) : charMap;
         const firstEntry = Object.entries(finalChars)[0];
 
@@ -464,7 +451,8 @@ const PlayPage = ({ updateNavScore }) => {
           id: firstEntry[0],
           content: firstEntry[1],
           difficulty: diffEntry.key,
-          characters: finalChars,
+          showCharacters: finalChars,
+          characters: charMap,
         });
 
         resetAll();
@@ -494,80 +482,174 @@ const PlayPage = ({ updateNavScore }) => {
     }
   };
 
-  const evaluateFetch = async (image = null, target = null) => {
-    //TODO: add check that current stroke-count must be +- 30% of actual stroke-count
-    if (refs.gameMode === "Test(5)" && (image == null || target == null)) {
-      return { status: "failed" };
+  const evaluateFetch = async (image, target) => {
+    const extractJSON = (text) => {
+      // Find the first opening brace and last closing brace
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+
+      if (start === -1 || end === -1) {
+        throw new Error("No JSON object found in model response.");
+      }
+
+      const jsonString = text.substring(start, end + 1);
+
+      // Remove BOM + zero-width chars
+      return jsonString
+        .replace(/\uFEFF/g, "")
+        .replace(/[\u200B-\u200F]/g, "")
+        .trim();
+    };
+    if (image.trim() === "") {
+      return {
+        score: 0,
+        confidence: 1,
+        feedback: "You didn't write anything here",
+      };
     }
-
-    let dataUrl = image ?? refs.canvas.toDataURL("image/jpg");
-    const res = await fetch("/api/eval-handwriting", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        image: dataUrl,
-        target: target ?? charData.content,
-        StrokeCount: refs.strokeCount,
-      }),
-    });
-
-    let parsed = null;
-    const text = await res.text();
-
     try {
-      parsed = JSON.parse(text);
-    } catch {
-      throw new Error("Error");
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-lite",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `
+      You are a chinese and japanese kanji handwriting evaluation model. 
+      You will be given:
+        - A dataURL of a handwritten character.
+        - A TARGET CHARACTER the handwriting is supposed to represent.
+  
+      The target character is: "${target}"
+  
+      Your tasks:
+      1. How accurate and readable the character is written.
+      2. How similar it is to the correct standard form.
+      
+      Return ONLY a JSON object with EXACTLY these fields:
+      {
+        "feedback": string, // detailed, concise and short feedback on stroke order, stroke ratio, proportions, orientation, accuracy within 300 characters
+        "score": number     // 0–100 similarity score
+        "confidence": float // 0–1 model confidence in the score (may include decimals)
+      }
+      `,
+              },
+              {
+                inlineData: {
+                  mimeType: "image/jpeg", // or image/jpeg depending on your dataURL
+                  data: image.split(",")[1], // remove "data:image/...;base64,"
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const raw = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const parsed = JSON.parse(extractJSON(raw));
+      return parsed;
+    } catch (e) {
+      console.log(e);
+      setError(String(e));
     }
 
-    if (!res.ok) {
-      const msg =
-        parsed?.detail ||
-        parsed?.error ||
-        parsed?.raw ||
-        text ||
-        "Request failed";
-      throw new Error(String(msg));
-    }
-    return { parsed: parsed, raw: text };
+    return {
+      score: 0,
+      confidence: 1,
+      feedback: "You didn't write anything here",
+    };
   };
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const handleEvaluate = async () => {
     setLoading(true);
     setError(null);
-    setResult(null);
 
-    if (!canvasHasInk(refs.canvas)) {
-      setError("Please draw something before evaluating 🙂");
-      setShowModal(true);
-      return;
-    }
     try {
-      const { parsed, raw } = evaluateFetch();
+      if (refs.gameMode === "Standard") {
+        if (!canvasHasInk(refs.canvas)) {
+          setError("Please draw something before evaluating 🙂");
+          setShowModal(true);
+          return;
+        }
+        const image = refs.canvas.toDataURL();
+        const res = await evaluateFetch(image, charData.content);
 
-      const finalScore = calcFinalScore(
-        parsed.score,
-        parsed.recognition_confidence,
-        parsed.stroke_estimate,
-        parsed.target_match,
-        parsed.orientation_ok,
-        refs.strokeCount,
-        parsed.is_doodle
-      );
+        refs.images = [image];
+        refs.results = [{ ...res, target: charData.content }];
+        finalScore.current = calcFinalScore(res.score, res.confidence, 1, 1);
+        if (finalScore.current >= SCORE_THRESHOLD) {
+          await updatePoints(
+            (refs.dbUser.points || 0) +
+              charData.difficulty * POINTS_PER_WORD_PER_DIFFICULTY
+          );
+        }
+      } else {
+        const chs = Object.values(charData.showCharacters);
+        const results = await Promise.allSettled([
+          refs.images[0].trim() === ""
+            ? Promise.resolve({
+                score: 0,
+                confidence: 1,
+                feedback: "You didn't write anything here",
+              })
+            : evaluateFetch(refs.images[0], chs[0]),
 
-      if (finalScore >= SCORE_THRESHOLD) {
-        await updatePoints(
-          (refs.dbUser.points || 0) +
-            charData.difficulty * POINTS_PER_WORD_PER_DIFFICULTY
-        );
+          refs.images[1].trim() === ""
+            ? Promise.resolve({
+                score: 0,
+                confidence: 1,
+                feedback: "You didn't write anything here",
+              })
+            : delay(400).then(() => evaluateFetch(refs.images[1], chs[1])),
+
+          refs.images[2].trim() === ""
+            ? Promise.resolve({
+                score: 0,
+                confidence: 1,
+                feedback: "You didn't write anything here",
+              })
+            : delay(800).then(() => evaluateFetch(refs.images[2], chs[2])),
+
+          refs.images[3].trim() === ""
+            ? Promise.resolve({
+                score: 0,
+                confidence: 1,
+                feedback: "You didn't write anything here",
+              })
+            : delay(1200).then(() => evaluateFetch(refs.images[3], chs[3])),
+
+          refs.images[4].trim() === ""
+            ? Promise.resolve({
+                score: 0,
+                confidence: 1,
+                feedback: "You didn't write anything here",
+              })
+            : delay(1600).then(() => evaluateFetch(refs.images[4], chs[4])),
+        ]);
+
+        let totalScore = 0;
+        results.forEach((result, index) => {
+          if (result.status === "fulfilled") {
+            const parsed = result.value;
+            totalScore += parsed.score;
+            refs.results[index] = { ...parsed, target: chs[index] };
+          }
+        });
+        finalScore.current = totalScore / results.length;
+        if (finalScore.current >= SCORE_THRESHOLD) {
+          await updatePoints(
+            (refs.dbUser.points || 0) +
+              charData.difficulty *
+                POINTS_PER_WORD_PER_DIFFICULTY *
+                TEST_MODE_POINT_MULTIPLIER
+          );
+        }
       }
-
-      refs.image = dataUrl;
-      setResult({ parsed, raw });
-      setShowModal(true);
     } catch (e) {
+      console.log(e);
       setError(String(e));
-      setShowModal(true);
     } finally {
+      setShowModal(true);
       clearDrawing();
       setLoading(false);
     }
@@ -580,10 +662,16 @@ const PlayPage = ({ updateNavScore }) => {
         {/* Header */}
         <div className="flex justify-between pb-1">
           <div className="text-lg flex gap-2 items-center text-[var(--text)]">
-            Let's {refs.gameMode === "Standard" ? "try" : "test"} a/an{" "}
+            Let's try a{" "}
             <select
               value={DIFFICULTIES[charData.difficulty]}
-              onChange={(e) => handleDifficultyChange(e.target.value)}
+              onChange={async (e) => {
+                await handleDifficultyChange(e.target.value);
+
+                if (refs.gameMode === "Test") {
+                  setShowModal(true);
+                }
+              }}
               disabled={loading}
               className={`pl-2 !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white ${
                 loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
@@ -610,16 +698,37 @@ const PlayPage = ({ updateNavScore }) => {
               {showGrid && (
                 <div
                   ref={(el) => (refs.gridContainer = el)}
-                  className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-20"
+                  className="absolute top-full left-0 mt-1 p-1 bg-white rounded-md border border-gray-300 shadow-lg z-20 overflow-x-scroll w-xl"
                 >
-                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 w-sm lg:w-md">
-                    {Object.entries(charData.characters).map(
+                  <div
+                    className="grid gap-2"
+                    style={{
+                      gridTemplateRows:
+                        refs.gameMode === "Standard" && "repeat(16, 1fr)",
+                      gridAutoFlow: "column",
+                      gridAutoColumns: "minmax(30px, auto)",
+                    }}
+                  >
+                    {Object.entries(charData.showCharacters).map(
                       ([id, content]) => (
                         <button
                           key={id}
-                          onClick={() => handleCharacterChange(id)}
+                          onClick={() => {
+                            if (
+                              refs.gameMode === "Test" &&
+                              canvasHasInk(refs.canvas)
+                            ) {
+                              const charArr = Object.keys(
+                                charData.showCharacters
+                              );
+                              const curIndex = charArr.indexOf(id);
+                              refs.images[curIndex] =
+                                refs.canvas.toDataURL("image/jpg");
+                            }
+                            handleCharacterChange(id);
+                          }}
                           disabled={loading}
-                          className={`relative !p-0 !m-0 text-lg font-bold rounded-sm border-1 transition-all ${
+                          className={`relative !p-0 !m-0 rounded-sm border-1 transition-all flex items-center justify-center ${
                             charData.id === id
                               ? "border-blue-600 bg-blue-50 text-blue-600"
                               : "border-gray-300 bg-white text-gray-800 hover:border-blue-400 hover:bg-blue-50"
@@ -648,7 +757,9 @@ const PlayPage = ({ updateNavScore }) => {
 
           <select
             value={refs.gameMode}
-            onChange={(e) => handleGameModeChange(e.target.value)}
+            onChange={(e) => {
+              handleGameModeChange(e.target.value);
+            }}
             disabled={loading}
             className={`pl-2 text-black !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white ${
               loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
@@ -670,7 +781,7 @@ const PlayPage = ({ updateNavScore }) => {
           />
 
           <div className="absolute right-2 top-2 z-10 flex gap-3 items-center">
-            {refs.gameMode === "Test(5)" ? (
+            {refs.gameMode === "Test" ? (
               <div className="text-sm font-semibold text-gray-700">
                 {Math.floor(timeLeft / 60)}:
                 {String(timeLeft % 60).padStart(2, "0")}
@@ -718,71 +829,26 @@ const PlayPage = ({ updateNavScore }) => {
             Clear
           </button>
 
-          {refs.gameMode === "Test(5)" ? (
+          {refs.gameMode === "Test" ? (
             <button
               disabled={loading}
               onClick={async () => {
-                const charArr = Object.keys(charData.characters);
-                const curIndex = charArr.indexOf(charData.id);
-                testModeRefs.current.images[curIndex] =
-                  refs.canvas.toDataURL("image/jpg");
-                //Submit onclick
-                if (Object.keys(charData.characters).at(-1) == charData.id) {
-                  try {
-                    const results = await Promise.allSettled([
-                      evaluateFetch(
-                        testModeRefs.current.images[0],
-                        testModeRefs.current.targets[0]
-                      ),
-                      evaluateFetch(
-                        testModeRefs.current.images[1],
-                        testModeRefs.current.targets[1]
-                      ),
-                      evaluateFetch(
-                        testModeRefs.current.images[2],
-                        testModeRefs.current.targets[2]
-                      ),
-                      evaluateFetch(
-                        testModeRefs.current.images[3],
-                        testModeRefs.current.targets[3]
-                      ),
-                      evaluateFetch(
-                        testModeRefs.current.images[4],
-                        testModeRefs.current.targets[4]
-                      ),
-                    ]);
-                    results.forEach((result, index) => {
-                      if (result.status === "fulfilled") {
-                        const { parsed } = result.value;
-                        testModeRefs.current.scores[index] = calcFinalScore(
-                          parsed.score,
-                          parsed.recognition_confidence,
-                          parsed.stroke_estimate,
-                          parsed.target_match,
-                          parsed.orientation_ok,
-                          testModeRefs.current.strokeCounts[index],
-                          parsed.is_doodle
-                        );
-                        testModeRefs.current.feedbacks[index] = parsed.feedback;
-                        testModeRefs.current.recognized[index] =
-                          parsed.recognized;
-                      }
-                    });
-                    const averageScore =
-                      testModeRefs.current.scores.reduce(
-                        (accumulator, currentValue) =>
-                          accumulator + currentValue,
-                        0
-                      ) / testModeRefs.current.scores.length;
-                    if (averageScore >= SCORE_THRESHOLD) {
-                      await updatePoints(
-                        (refs.dbUser.points || 0) +
-                          charData.difficulty *
-                            POINTS_PER_WORD_PER_DIFFICULTY *
-                            TEST_MODE_POINT_MULTIPLIER
-                      );
-                    }
-                  } catch {}
+                const charArr = Object.keys(charData.showCharacters);
+                if (canvasHasInk(refs.canvas)) {
+                  const curIndex = charArr.indexOf(charData.id);
+                  refs.images[curIndex] = refs.canvas.toDataURL("image/jpg");
+                }
+
+                if (charArr.at(-1) == charData.id) {
+                  if (refs.images.every((el) => el === "")) {
+                    setError(
+                      "We think its cause you didn't write anything. Unfortunately, you got 0/100 😢"
+                    );
+                    setShowModal(true);
+                    return;
+                  }
+                  setIsTimerRunning(false);
+                  handleEvaluate();
                 } else {
                   handleNextCharacter();
                 }
@@ -791,7 +857,7 @@ const PlayPage = ({ updateNavScore }) => {
                 loading ? "!cursor-not-allowed opacity-50" : ""
               }`}
             >
-              {Object.keys(charData.characters).at(-1) == charData.id
+              {Object.keys(charData.showCharacters).at(-1) == charData.id
                 ? "Submit"
                 : "Next"}
             </button>
@@ -803,20 +869,23 @@ const PlayPage = ({ updateNavScore }) => {
                 loading ? "!cursor-not-allowed opacity-50" : ""
               }`}
             >
-              {loading ? "Evaluating…" : "Evaluate"}
+              Evaluate
             </button>
           )}
         </div>
 
         {/* Result Modal */}
         {showModal && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative">
+          <div className=" fixed inset-0 flex items-center justify-center bg-black/30 z-50">
+            <div className="max-h-[95vh] bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative">
               <button
                 onClick={() => {
-                  if (refs.gameMode === "Test(5)") {
-                    handleGameModeChange("Standard");
+                  if (refs.gameMode === "Test") {
+                    handleGameModeChange("Test");
+                    return;
                   }
+                  setLoading(false);
+                  setShowModal(false);
                 }}
                 className="absolute z-50 rounded-full !p-0 bg-white top-3 right-3 text-gray-500 hover:text-gray-700"
               >
@@ -831,66 +900,95 @@ const PlayPage = ({ updateNavScore }) => {
                   </h2>{" "}
                   {error}
                 </div>
-              ) : result?.parsed ? (
+              ) : refs.results.length ? (
                 <div className="space-y-3">
-                  <h2 className="text-2xl font-bold pb-2">
-                    {calcFinalScore(
-                      result.parsed.score,
-                      result.parsed.recognition_confidence,
-                      result.parsed.stroke_estimate,
-                      result.parsed.target_match,
-                      result.parsed.orientation_ok,
-                      refs.strokeCount,
-                      result.parsed.is_doodle
-                    ) >= SCORE_THRESHOLD
-                      ? "Nice!"
+                  <h2 className="text-2xl font-bold pb-1">
+                    {finalScore.current >= SCORE_THRESHOLD
+                      ? `Nice! (+${
+                          charData.difficulty * POINTS_PER_WORD_PER_DIFFICULTY
+                        }pts)`
+                      : refs.gameMode === "Test"
+                      ? `Do better😞 (Avg: ${
+                          Math.round(finalScore.current * 10) / 10
+                        })`
                       : "Do better😞"}
                   </h2>
-                  <div className="flex justify-center p-0 border-gray-300 border-dashed border-3 rounded-md bg-gray-50 relative overflow-hidden">
-                    <img src={refs.image} alt="drawing" />
-                  </div>
+                  <Slide
+                    autoplay={false}
+                    arrows={refs.gameMode === "Test"}
+                    transitionDuration={350}
+                    prevArrow={
+                      <button className="-ml-6 text-center opacity-30 hover:opacity-100 !p-0 text-black">
+                        <ChevronLeft size={30} />
+                      </button>
+                    }
+                    nextArrow={
+                      <button className="-mr-6 text-center opacity-30 hover:opacity-100 !p-0 text-black">
+                        <ChevronRight size={30} />
+                      </button>
+                    }
+                    indicators={refs.gameMode === "Test"}
+                  >
+                    {refs.results.map((res, index) => {
+                      return (
+                        <div
+                          key={index}
+                          className="h-full p-1 overflow-hidden flex flex-col justify-between gap-1"
+                        >
+                          <div className="h-full w-full !p-0 border-gray-300 border-dashed border-3 rounded-md bg-gray-50 relative overflow-hidden">
+                            {refs.images[index].trim() === "" ? (
+                              <div className="w-full" />
+                            ) : (
+                              <img src={refs.images[index]} alt="drawing" />
+                            )}
+                          </div>
 
-                  <div>
-                    <p>
-                      <b>Score:</b>{" "}
-                      {(() => {
-                        const score = calcFinalScore(
-                          result.parsed.score,
-                          result.parsed.recognition_confidence,
-                          result.parsed.stroke_estimate,
-                          result.parsed.target_match,
-                          result.parsed.orientation_ok,
-                          refs.strokeCount,
-                          result.parsed.is_doodle
-                        );
-                        return Number.isFinite(score)
-                          ? `${Math.round(score * 10) / 10}/100${
-                              score >= SCORE_THRESHOLD
-                                ? ` (+${
-                                    charData.difficulty *
-                                    POINTS_PER_WORD_PER_DIFFICULTY
-                                  })`
-                                : ""
-                            }`
-                          : "—";
-                      })()}
-                    </p>
-                    <p>
-                      <b>Target:</b> {charData.content} (
-                      {result.parsed.definition})
-                    </p>
-                    <p>
-                      <b>Recognized:</b> {result.parsed.recognized ?? "—"}
-                    </p>
-                    <p>
-                      <b>Feedback:</b> {result.parsed.feedback ?? "—"}
-                    </p>
-                  </div>
+                          <div>
+                            <p>
+                              <b>Score:</b>{" "}
+                              {Number.isFinite(res.score)
+                                ? `${
+                                    Math.round(
+                                      res.score * res.confidence * 10
+                                    ) / 10
+                                  }/100`
+                                : "—"}
+                            </p>
+                            <p>
+                              <b>Target:</b> {res.target ?? "—"}
+                            </p>
+
+                            <p className=" text-ellipsis whitespace-pre-wrap">
+                              <b>Feedback:</b> {res.feedback ?? "—"}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Slide>
 
                   <div className="w-full flex justify-between items-center gap-3">
                     <button
                       disabled={loading}
-                      onClick={resetAll}
+                      onClick={async () => {
+                        resetAll();
+                        if (refs.gameMode === "Test") {
+                          const randomChars = getRandomChars(
+                            charData.characters,
+                            5
+                          );
+                          const firstId = Object.keys(randomChars)[0];
+
+                          setCharData((prev) => ({
+                            ...prev,
+                            id: firstId,
+                            content: randomChars[firstId],
+                            showCharacters: randomChars,
+                          }));
+                          setShowModal(true);
+                          setTimeLeft(TEST_MODE_TIME);
+                        }
+                      }}
                       className={`bg-[var(--primary)] text-white !px-8 !rounded-md ${
                         loading ? "!cursor-not-allowed opacity-50" : ""
                       }`}
@@ -899,16 +997,22 @@ const PlayPage = ({ updateNavScore }) => {
                     </button>
                     <button
                       disabled={loading}
-                      onClick={handleNextCharacter}
+                      onClick={() => {
+                        if (refs.gameMode === "Test") {
+                          handleGameModeChange("Standard");
+                          return;
+                        }
+                        handleNextCharacter();
+                      }}
                       className={`bg-[var(--primary)] text-white !px-8 !rounded-md ${
                         loading ? "!cursor-not-allowed opacity-50" : ""
                       }`}
                     >
-                      Next
+                      {refs.gameMode === "Test" ? "Go to standard" : "Next"}
                     </button>
                   </div>
                 </div>
-              ) : refs.gameMode === "Test(5)" ? (
+              ) : refs.gameMode === "Test" ? (
                 <div className="space-y-4">
                   <div>
                     <h2 className="text-2xl font-bold pb-2">
@@ -923,7 +1027,6 @@ const PlayPage = ({ updateNavScore }) => {
                   <div className="w-full flex justify-between items-center gap-3">
                     <button
                       onClick={() => {
-                        resetAll();
                         handleGameModeChange("Standard");
                       }}
                       className={`bg-[var(--primary)] text-white !px-8 !rounded-md`}
@@ -935,7 +1038,7 @@ const PlayPage = ({ updateNavScore }) => {
                         setShowModal(false);
                         setTimeout(() => {
                           setIsTimerRunning(true);
-                        }, 1000);
+                        }, 600);
                       }}
                       className={`bg-[var(--primary)] text-white !px-8 !rounded-md`}
                     >
@@ -944,15 +1047,7 @@ const PlayPage = ({ updateNavScore }) => {
                   </div>
                 </div>
               ) : (
-                <div>
-                  Could not parse JSON. <br />
-                  Raw response:
-                  <pre className="mt-2 p-2 bg-gray-100 rounded text-sm max-h-40 overflow-auto">
-                    {typeof result?.raw === "string" && result.raw.length
-                      ? result.raw
-                      : "—"}
-                  </pre>
-                </div>
+                <div>Could not parse JSON.</div>
               )}
             </div>
           </div>
