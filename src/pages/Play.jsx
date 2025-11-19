@@ -82,7 +82,7 @@ const getRandomChars = (charObj, count = 5) => {
   return Object.fromEntries(shuffled.slice(0, count));
 };
 
-const calcFinalScore = (score, confidence, stroke, expectedStroke) => {
+const calcFinalScore = (score, confidence, stroke = 1, expectedStroke = 1) => {
   const finalScore = score * confidence * (stroke / expectedStroke);
   return finalScore;
 };
@@ -126,14 +126,6 @@ const PlayPage = ({ updateNavScore }) => {
   }).current;
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  useEffect(() => {
-    if (!isTimerRunning) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [isTimerRunning]);
   const { DIFFICULTIES, SORTED_DIFFICULTIES } = getDifficultyLabels(language);
   // Initialize user data and load first character
   useEffect(() => {
@@ -631,7 +623,7 @@ const PlayPage = ({ updateNavScore }) => {
         results.forEach((result, index) => {
           if (result.status === "fulfilled") {
             const parsed = result.value;
-            totalScore += parsed.score;
+            totalScore += calcFinalScore(parsed.score, parsed.confidence);
             refs.results[index] = { ...parsed, target: chs[index] };
           }
         });
@@ -641,6 +633,7 @@ const PlayPage = ({ updateNavScore }) => {
             (refs.dbUser.points || 0) +
               charData.difficulty *
                 POINTS_PER_WORD_PER_DIFFICULTY *
+                5 *
                 TEST_MODE_POINT_MULTIPLIER
           );
         }
@@ -654,7 +647,25 @@ const PlayPage = ({ updateNavScore }) => {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    if (!isTimerRunning) return;
 
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        const newTime = prev - 1;
+
+        if (newTime === 0) {
+          clearInterval(timer);
+          setIsTimerRunning(false);
+          handleEvaluate();
+        }
+
+        return newTime;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isTimerRunning, handleEvaluate]);
   // Render
   return (
     <div className="bg-[var(--tertiary)] w-full h-screen">
@@ -869,15 +880,15 @@ const PlayPage = ({ updateNavScore }) => {
                 loading ? "!cursor-not-allowed opacity-50" : ""
               }`}
             >
-              Evaluate
+              Submit
             </button>
           )}
         </div>
 
         {/* Result Modal */}
         {showModal && (
-          <div className=" fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-            <div className="max-h-[95vh] bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative">
+          <div className=" fixed inset-0 flex items-center justify-center bg-black/30 z-50 ">
+            <div className="max-h-[97vh] bg-white rounded-lg shadow-lg max-w-md w-full pl-7 pr-7 pt-3 pb-3 relative">
               <button
                 onClick={() => {
                   if (refs.gameMode === "Test") {
@@ -901,11 +912,17 @@ const PlayPage = ({ updateNavScore }) => {
                   {error}
                 </div>
               ) : refs.results.length ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <h2 className="text-2xl font-bold pb-1">
                     {finalScore.current >= SCORE_THRESHOLD
                       ? `Nice! (+${
-                          charData.difficulty * POINTS_PER_WORD_PER_DIFFICULTY
+                          refs.gameMode === "Standard"
+                            ? charData.difficulty *
+                              POINTS_PER_WORD_PER_DIFFICULTY
+                            : charData.difficulty *
+                              POINTS_PER_WORD_PER_DIFFICULTY *
+                              5 *
+                              TEST_MODE_POINT_MULTIPLIER
                         }pts)`
                       : refs.gameMode === "Test"
                       ? `Do better😞 (Avg: ${
@@ -918,12 +935,12 @@ const PlayPage = ({ updateNavScore }) => {
                     arrows={refs.gameMode === "Test"}
                     transitionDuration={350}
                     prevArrow={
-                      <button className="-ml-6 text-center opacity-30 hover:opacity-100 !p-0 text-black">
+                      <button className="-ml-7 text-center opacity-30 hover:opacity-100 !p-0 text-black">
                         <ChevronLeft size={30} />
                       </button>
                     }
                     nextArrow={
-                      <button className="-mr-6 text-center opacity-30 hover:opacity-100 !p-0 text-black">
+                      <button className="-mr-7 text-center opacity-30 hover:opacity-100 !p-0 text-black">
                         <ChevronRight size={30} />
                       </button>
                     }
@@ -933,9 +950,9 @@ const PlayPage = ({ updateNavScore }) => {
                       return (
                         <div
                           key={index}
-                          className="h-full p-1 overflow-hidden flex flex-col justify-between gap-1"
+                          className=" overflow-hidden flex flex-col justify-between gap-1"
                         >
-                          <div className="h-full w-full !p-0 border-gray-300 border-dashed border-3 rounded-md bg-gray-50 relative overflow-hidden">
+                          <div className=" w-full !p-0 border-gray-300 border-dashed border-3 rounded-md bg-gray-50 relative overflow-hidden">
                             {refs.images[index].trim() === "" ? (
                               <div className="w-full" />
                             ) : (
@@ -958,7 +975,7 @@ const PlayPage = ({ updateNavScore }) => {
                               <b>Target:</b> {res.target ?? "—"}
                             </p>
 
-                            <p className=" text-ellipsis whitespace-pre-wrap">
+                            <p className="text-sm">
                               <b>Feedback:</b> {res.feedback ?? "—"}
                             </p>
                           </div>
