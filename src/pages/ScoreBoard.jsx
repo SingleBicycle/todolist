@@ -43,12 +43,10 @@ const ScoreBoardPage = () => {
           getCurrentUser(),
           getAllUsers(),
         ]);
-
         // Sort users by score in descending order
         const sortedUsers = fetchedUsers.sort(
           (a, b) => (b.points || 0) - (a.points || 0)
         );
-
         setUsers(sortedUsers);
         setCurrentUser(fetchedCurrentUser);
         setIsLoading(false);
@@ -64,8 +62,8 @@ const ScoreBoardPage = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
-        <h3 className="text-2xl font-bold text-center mb-20">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-4 sm:mt-8 px-4">
+        <h3 className="text-xl sm:text-2xl font-bold text-center mb-10 sm:mb-20">
           Loading scoreboard...
         </h3>
       </div>
@@ -75,8 +73,8 @@ const ScoreBoardPage = () => {
   // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
-        <h3 className="text-2xl font-bold text-center mb-20">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-4 sm:mt-8 px-4">
+        <h3 className="text-xl sm:text-2xl font-bold text-center mb-10 sm:mb-20">
           Error loading scoreboard: {error.message}
         </h3>
       </div>
@@ -85,46 +83,54 @@ const ScoreBoardPage = () => {
 
   // Users state
   return (
-    <div className="text-[var(--text)]">
-      <h2 className="text-4xl font-bold text-center mt-20 mb-8">Scoreboard</h2>
-
+    <div className="text-[var(--text)] px-4">
+      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mt-8 sm:mt-12 lg:mt-20 mb-4 sm:mb-6 lg:mb-8">
+        Scoreboard
+      </h2>
       <div className="flex flex-col items-center justify-center">
-        <div className="w-80/100 bg-[var(--tertiary)] rounded-md m-4">
-          <table className="w-full">
+        <div className="w-full max-w-4xl bg-[var(--tertiary)] rounded-md my-2 sm:m-4 overflow-hidden">
+          <table className="w-full table-fixed">
             <thead className="bg-[var(--primary)] text-white">
               <tr>
-                <th>Rank</th>
-                <th>Username</th>
-                <th>Last played at</th>
-                <th>Points</th>
+                <th className="py-3 px-2 sm:px-4 text-xs sm:text-base w-12 sm:w-16">Rank</th>
+                <th className="py-3 px-2 sm:px-4 text-left text-xs sm:text-base">Username</th>
+                <th className="py-3 px-2 sm:px-4 text-xs sm:text-base hidden md:table-cell">Last played at</th>
+                <th className="py-3 px-2 sm:px-4 text-xs sm:text-base w-16 sm:w-20">Points</th>
               </tr>
             </thead>
             <tbody>
               {users.map((user, index) => (
                 <tr
                   key={user.id}
-                  className={
+                  className={`cursor-pointer ${
                     currentUser && user.id === currentUser.uid
                       ? "bg-[var(--accent-secondary)] hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out"
                       : "bg-[var(--tertiary)] hover:bg-[var(--secondary)] transition-all duration-200 ease-in-out"
-                  }
-                  cursor-pointer
+                  }`}
                   onClick={() => {
                     navigate(`/profile/${user.id}`);
                   }}
                 >
-                  <td>{index + 1}</td>
-                  <td className="flex flex-row items-center">
-                    <img
-                      className="size-8 rounded-sm mr-2"
-                      src={user.photo_url || anonymousPfp}
-                      alt="Profile image"
-                      referrerPolicy="no-referrer"
-                    />{" "}
-                    {user.username || "No username"}
+                  <td className="py-3 px-2 sm:px-4 text-center text-xs sm:text-base">{index + 1}</td>
+                  <td className="py-3 px-2 sm:px-4">
+                    <div className="flex flex-row items-center min-w-0">
+                      <img
+                        className="size-6 sm:size-8 rounded-sm mr-1 sm:mr-2 flex-shrink-0 object-cover"
+                        src={user.photo_url || anonymousPfp}
+                        alt="Profile image"
+                        referrerPolicy="no-referrer"
+                      />
+                      <span className="text-xs sm:text-base truncate">
+                        {user.username || "No username"}
+                      </span>
+                    </div>
                   </td>
-                  <td>{formatRelativeTime(user.last_played_at) || "Never"}</td>
-                  <td>{user.points || 0}</td>
+                  <td className="py-3 px-2 sm:px-4 text-center text-xs sm:text-base hidden md:table-cell">
+                    {user.last_played_at || "Never"}
+                  </td>
+                  <td className="py-3 px-2 sm:px-4 text-center text-xs sm:text-base font-semibold">
+                    {user.points || 0}
+                  </td>
                 </tr>
               ))}
             </tbody>

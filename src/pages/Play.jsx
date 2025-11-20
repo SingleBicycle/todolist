@@ -40,6 +40,12 @@ const DIFFICULTY_MAPPINGS = {
   },
 };
 
+const getCanvasSize = () => {
+  const width = window.innerWidth < 600 ? 250 : 620;
+  return { width, height: width };
+};
+
+
 const getDifficultyLabels = (language) => {
   const difficulties =
     DIFFICULTY_MAPPINGS[language] || DIFFICULTY_MAPPINGS.Chinese;
@@ -206,7 +212,8 @@ const PlayPage = ({ updateNavScore }) => {
   // Update HanziWriter
   useEffect(() => {
     if (refs.writerContainer && charData.content) {
-      refs.writer = testtHanziWriter(refs.writerContainer, charData.content);
+      const { width, height } = getCanvasSize();
+      refs.writer = testtHanziWriter(refs.writerContainer, charData.content, width, height);
     }
   }, [charData.content]);
 
@@ -668,11 +675,11 @@ const PlayPage = ({ updateNavScore }) => {
   }, [isTimerRunning, handleEvaluate]);
   // Render
   return (
-    <div className="bg-[var(--tertiary)] w-full h-screen">
-      <div className="container m-auto pt-10 max-w-[620px]">
-        {/* Header */}
-        <div className="flex justify-between pb-1">
-          <div className="text-lg flex gap-2 items-center text-[var(--text)]">
+    <div className="bg-[var(--tertiary)] w-full min-h-screen overflow-x-hidden pb-8">
+      <div className="container m-auto pt-10 max-w-[620px] px-4">
+        {/* Header — compact & mobile friendly */}
+        <div className="flex justify-between items-start pb-1 gap-3">
+          <div className="text-lg flex flex-wrap gap-2 items-center text-[var(--text)]">
             Let's try a{" "}
             <select
               value={DIFFICULTIES[charData.difficulty]}
@@ -684,7 +691,7 @@ const PlayPage = ({ updateNavScore }) => {
                 }
               }}
               disabled={loading}
-              className={`pl-2 !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white ${
+              className={`pl-2 !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white text-sm ${
                 loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
               }`}
             >
@@ -699,7 +706,7 @@ const PlayPage = ({ updateNavScore }) => {
               <button
                 onClick={() => setShowGrid(!showGrid)}
                 disabled={loading}
-                className={`!px-2 !py-0 border !rounded-md border-gray-300 bg-white ${
+                className={`!px-2 !py-0 border !rounded-md border-gray-300 bg-white text-sm ${
                   loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
                 }`}
               >
@@ -709,17 +716,9 @@ const PlayPage = ({ updateNavScore }) => {
               {showGrid && (
                 <div
                   ref={(el) => (refs.gridContainer = el)}
-                  className="absolute top-full left-0 mt-1 p-1 bg-white rounded-md border border-gray-300 shadow-lg z-20 overflow-x-scroll w-xl"
+                  className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-20 max-h-[300px] overflow-y-auto w-56 md:w-80 lg:w-96"
                 >
-                  <div
-                    className="grid gap-2"
-                    style={{
-                      gridTemplateRows:
-                        refs.gameMode === "Standard" && "repeat(16, 1fr)",
-                      gridAutoFlow: "column",
-                      gridAutoColumns: "minmax(30px, auto)",
-                    }}
-                  >
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                     {Object.entries(charData.showCharacters).map(
                       ([id, content]) => (
                         <button
@@ -739,15 +738,11 @@ const PlayPage = ({ updateNavScore }) => {
                             handleCharacterChange(id);
                           }}
                           disabled={loading}
-                          className={`relative !p-0 !m-0 rounded-sm border-1 transition-all flex items-center justify-center ${
+                          className={`relative !p-0 !m-0 text-lg font-bold rounded-sm border-1 transition-all flex items-center justify-center h-10 w-10 ${
                             charData.id === id
                               ? "border-blue-600 bg-blue-50 text-blue-600"
                               : "border-gray-300 bg-white text-gray-800 hover:border-blue-400 hover:bg-blue-50"
-                          } ${
-                            loading
-                              ? "cursor-not-allowed opacity-50"
-                              : "cursor-pointer"
-                          }`}
+                          } ${loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
                         >
                           {content}
                           {refs.gameMode === "Standard" &&
@@ -772,7 +767,7 @@ const PlayPage = ({ updateNavScore }) => {
               handleGameModeChange(e.target.value);
             }}
             disabled={loading}
-            className={`pl-2 text-black !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white ${
+            className={`pl-2 text-black !pr-0 py-1 rounded-md border-1 border-gray-300 bg-white text-sm ${
               loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
             }`}
           >
@@ -784,13 +779,14 @@ const PlayPage = ({ updateNavScore }) => {
           </select>
         </div>
 
-        {/* Canvas Area */}
-        <div className="relative min-h-[620px] bg-white rounded-md border-gray-300 border-dashed border-4">
+        {/* Canvas Area — mobile-friendly: min height so canvas is usable on small screens */}
+        <div className="relative min-h-[620px] bg-white rounded-md border-gray-300 border-dashed border-4 mt-4 overflow-hidden">
           <div
             ref={(el) => (refs.writerContainer = el)}
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
           />
 
+          {/* top-right controls */}
           <div className="absolute right-2 top-2 z-10 flex gap-3 items-center">
             {refs.gameMode === "Test" ? (
               <div className="text-sm font-semibold text-gray-700">
@@ -813,10 +809,8 @@ const PlayPage = ({ updateNavScore }) => {
             height={CHEIGHT}
             ref={(el) => (refs.canvas = el)}
             style={{ touchAction: "none" }}
-            className={`rounded-md m-auto !p-0 absolute top-0 !bg-transparent cursor-crosshair ${
-              loading
-                ? "!cursor-not-allowed pointer-events-none opacity-50"
-                : ""
+            className={`rounded-md m-auto !p-0 absolute top-0 left-0 w-full h-full !bg-transparent cursor-crosshair ${
+              loading ? "!cursor-not-allowed pointer-events-none opacity-50" : ""
             }`}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -828,17 +822,19 @@ const PlayPage = ({ updateNavScore }) => {
           />
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-between pt-3">
-          <button
-            disabled={loading}
-            onClick={clearDrawing}
-            className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md blue-button ${
-              loading ? "!cursor-not-allowed opacity-50" : ""
-            }`}
-          >
-            Clear
-          </button>
+        {/* Action Buttons — stacked nicely on mobile */}
+        <div className="flex flex-col sm:flex-row justify-between pt-3 gap-3">
+          <div className="flex gap-2 justify-center sm:justify-start">
+            <button
+              disabled={loading}
+              onClick={clearDrawing}
+              className={`bg-[var(--primary)] text-white !px-6 !py-2 !rounded-md blue-button ${
+                loading ? "!cursor-not-allowed opacity-50" : ""
+              }`}
+            >
+              Clear
+            </button>
+          </div>
 
           {refs.gameMode === "Test" ? (
             <button
@@ -885,10 +881,10 @@ const PlayPage = ({ updateNavScore }) => {
           )}
         </div>
 
-        {/* Result Modal */}
+        {/* Result Modal — mobile-optimized */}
         {showModal && (
-          <div className=" fixed inset-0 flex items-center justify-center bg-black/30 z-50 ">
-            <div className="max-h-[97vh] bg-white rounded-lg shadow-lg max-w-md w-full pl-7 pr-7 pt-3 pb-3 relative">
+          <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative max-h-[90vh] overflow-y-auto">
               <button
                 onClick={() => {
                   if (refs.gameMode === "Test") {
@@ -906,9 +902,7 @@ const PlayPage = ({ updateNavScore }) => {
               {/* Evaluation Modal */}
               {error ? (
                 <div className="text-black">
-                  <h2 className="text-2xl font-bold pb-2">
-                    Somethings wrong...
-                  </h2>{" "}
+                  <h2 className="text-2xl font-bold pb-2">Somethings wrong...</h2>{" "}
                   {error}
                 </div>
               ) : refs.results.length ? (
@@ -954,9 +948,11 @@ const PlayPage = ({ updateNavScore }) => {
                         >
                           <div className=" w-full !p-0 border-gray-300 border-dashed border-3 rounded-md bg-gray-50 relative overflow-hidden">
                             {refs.images[index].trim() === "" ? (
-                              <div className="w-full" />
+                              <div className="w-full h-40 flex items-center justify-center text-gray-400">
+                                No drawing
+                              </div>
                             ) : (
-                              <img src={refs.images[index]} alt="drawing" />
+                              <img src={refs.images[index]} alt="drawing" className="w-full h-auto"/>
                             )}
                           </div>
 
@@ -1032,13 +1028,10 @@ const PlayPage = ({ updateNavScore }) => {
               ) : refs.gameMode === "Test" ? (
                 <div className="space-y-4">
                   <div>
-                    <h2 className="text-2xl font-bold pb-2">
-                      Welcome to Test Mode!
-                    </h2>
+                    <h2 className="text-2xl font-bold pb-2">Welcome to Test Mode!</h2>
                     <p className="">
                       You’ve got {TEST_MODE_TIME} seconds to write 5 characters
-                      and score 1.5× points compared to Standard Mode—good luck
-                      😊!
+                      and score 1.5× points compared to Standard Mode—good luck 😊!
                     </p>
                   </div>
                   <div className="w-full flex justify-between items-center gap-3">
