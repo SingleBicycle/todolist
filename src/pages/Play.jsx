@@ -541,7 +541,7 @@ const PlayPage = ({ updateNavScore }) => {
       const parsed = JSON.parse(extractJSON(raw));
       return parsed;
     } catch (e) {
-      console.log(e);
+      console.error(e);
       setError(String(e));
     }
 
@@ -639,7 +639,7 @@ const PlayPage = ({ updateNavScore }) => {
         }
       }
     } catch (e) {
-      console.log(e);
+      console.error(e);
       setError(String(e));
     } finally {
       setShowModal(true);

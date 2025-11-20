@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getCurrentUser } from "../firebase/auth";
 import { getUserById, updateUser } from "../firebase/database";
@@ -29,16 +29,14 @@ const ProfileEditPage = () => {
         const currentUser = await getCurrentUser();
         setCurrentUser(currentUser);
         setFormData({
-          username: fetchedUser.username || '',
-          first_name: fetchedUser.first_name || '',
-          last_name: fetchedUser.last_name || '',
-          language: fetchedUser.language || 'Japanese',
+          username: fetchedUser.username || "",
+          first_name: fetchedUser.first_name || "",
+          last_name: fetchedUser.last_name || "",
+          language: fetchedUser.language || "Japanese",
         });
-
-        
       } catch (err) {
-        console.error('Error fetching user data:', err);
-        setError('Failed to load user data');
+        console.error("Error fetching user data:", err);
+        setError("Failed to load user data");
       } finally {
         setIsLoading(false);
       }
@@ -50,9 +48,9 @@ const ProfileEditPage = () => {
   // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
+    setFormData((prevState) => ({
       ...prevState,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -63,13 +61,13 @@ const ProfileEditPage = () => {
     try {
       // Validate form data
       if (!formData.username) {
-        setError('Display name is required');
+        setError("Display name is required");
         return;
       }
 
       // Remove empty fields to avoid overwriting with empty strings
       const cleanedData = Object.fromEntries(
-        Object.entries(formData).filter(([_, v]) => v !== '')
+        Object.entries(formData).filter(([_, v]) => v !== "")
       );
 
       // Call the update function
@@ -77,15 +75,15 @@ const ProfileEditPage = () => {
 
       // Navigate back to profile or show success message
       if (isFirstTimeSignIn) {
-        navigate("/play")
+        navigate("/play");
       } else {
         navigate(`/profile/${uid}`);
       }
     } catch (err) {
-      console.error('Update failed:', err);
-      setError('Failed to update profile');
+      console.error("Update failed:", err);
+      setError("Failed to update profile");
     }
-  }
+  };
 
   // Loading state
   if (isLoading) {
@@ -166,21 +164,19 @@ const ProfileEditPage = () => {
             Please complete your profile to get started!
           </div>
         )}
-        {!isFirstTimeSignIn && (
-          <div>
-            Edit profile
-          </div>
-        )}
-        
+        {!isFirstTimeSignIn && <div>Edit profile</div>}
       </h3>
 
       <div className="flex flex-col items-center justify-center">
         <div className="w-80/100 bg-[var(--tertiary)] rounded-md">
-
-          
-            <form onSubmit={handleSubmit} className="p-8 flex flex-col items-center justify-center">
+          <form
+            onSubmit={handleSubmit}
+            className="p-8 flex flex-col items-center justify-center"
+          >
             <div className="form-group">
-              <label htmlFor="username" className="form-label">Username</label>
+              <label htmlFor="username" className="form-label">
+                Username
+              </label>
               <input
                 type="text"
                 id="username"
@@ -219,17 +215,22 @@ const ProfileEditPage = () => {
             </div> */}
 
             <div className="form-group">
-              <label htmlFor="language" className="form-label">Language</label>
-              <select 
-                type="language" 
+              <label htmlFor="language" className="form-label">
+                Language
+              </label>
+              <select
+                type="language"
                 name="language"
                 id="language"
                 className="form-input w-75"
                 value={formData.language}
-                onChange={(e) => setFormData({ ...formData, language: e.target.value })}>
+                onChange={(e) =>
+                  setFormData({ ...formData, language: e.target.value })
+                }
+              >
                 <option value="Japanese">Japanese</option>
                 <option value="Chinese">Chinese</option>
-                <option value="English">English</option>
+                {/* <option value="English">English</option> */}
               </select>
             </div>
 
@@ -246,11 +247,10 @@ const ProfileEditPage = () => {
                 className="blue-button ml-8"
                 disabled={isLoading}
               >
-                {isLoading ? 'Updating...' : 'Save Changes'}
+                {isLoading ? "Updating..." : "Save Changes"}
               </button>
             </div>
           </form>
-
         </div>
       </div>
     </div>
