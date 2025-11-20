@@ -32,6 +32,7 @@ const ProfileEditPage = () => {
           username: fetchedUser.username || '',
           first_name: fetchedUser.first_name || '',
           last_name: fetchedUser.last_name || '',
+          language: fetchedUser.language || 'Japanese',
         });
 
         
@@ -192,7 +193,7 @@ const ProfileEditPage = () => {
               />
             </div>
 
-            <div className="form-group w-full">
+            {/* <div className="form-group w-full">
               <label htmlFor="first_name" className="form-label text-sm sm:text-base">First name</label>
               <input
                 type="first_name"
@@ -215,6 +216,21 @@ const ProfileEditPage = () => {
                 placeholder="Enter your last name"
                 className="form-input w-full"
               />
+            </div> */}
+
+            <div className="form-group w-full">
+              <label htmlFor="language" className="form-label text-sm sm:text-base">Language</label>
+              <select 
+                type="language" 
+                name="language"
+                id="language"
+                className="form-input w-full"
+                value={formData.language}
+                onChange={(e) => setFormData({ ...formData, language: e.target.value })}>
+                <option value="Japanese">Japanese</option>
+                <option value="Chinese">Chinese</option>
+                <option value="English">English</option>
+              </select>
             </div>
 
             <div className="p-4 sm:p-8 flex flex-col sm:flex-row items-center justify-center gap-4 w-full">

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../firebase/auth";
 import { getUserById } from "../firebase/database";
-import BackButton from "./BackButton";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
 
 const ProfilePage = () => {
@@ -74,7 +73,7 @@ const ProfilePage = () => {
             <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
               <img
                 className="w-16 h-16 sm:w-20 sm:h-20 object-cover"
-                src={user.photo_url}
+                src={user.photo_url || anonymousPfp}
                 alt="Profile image"
                 referrerPolicy="no-referrer"
               />
@@ -139,17 +138,22 @@ const ProfilePage = () => {
                   </td>
                   <td className="py-3 text-sm sm:text-base">{user.last_word}</td>
                 </tr>
-                <tr>
+                <tr className="border-b border-gray-200">
                   <td className="py-3 pr-4 text-sm sm:text-base">
                     <b>Points</b>
                   </td>
                   <td className="py-3 text-sm sm:text-base">{user.points}</td>
                 </tr>
+                <tr>
+                  <td className="py-3 pr-4 text-sm sm:text-base">
+                    <b>Language</b>
+                  </td>
+                  <td className="py-3 text-sm sm:text-base">{user.language}</td>
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
-        {/* <BackButton /> */}
       </div>
     </div>
   );
