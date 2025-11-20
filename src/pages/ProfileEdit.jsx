@@ -229,7 +229,7 @@ const ProfileEditPage = () => {
                 onChange={(e) => setFormData({ ...formData, language: e.target.value })}>
                 <option value="Japanese">Japanese</option>
                 <option value="Chinese">Chinese</option>
-                <option value="English">English</option>
+                {/* <option value="English">English</option> */}
               </select>
             </div>
 
