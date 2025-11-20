@@ -1,16 +1,33 @@
 import React, { useState, useEffect } from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Link,
-  useNavigate,
-} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getAllUsers } from "../firebase/database";
 import { getCurrentUser } from "../firebase/auth";
-import BackButton from "./BackButton";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
+const formatRelativeTime = (timestamp) => {
+  if (!timestamp) return "Never";
 
+  const now = Date.now();
+  const then = timestamp * 1000;
+  const diff = now - then;
+
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+
+  // Fall back to date format for older timestamps
+  const date = new Date(then);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
 const ScoreBoardPage = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
@@ -49,7 +66,6 @@ const ScoreBoardPage = () => {
         <h3 className="text-xl sm:text-2xl font-bold text-center mb-10 sm:mb-20">
           Loading scoreboard...
         </h3>
-        {/* <BackButton /> */}
       </div>
     );
   }
@@ -61,7 +77,6 @@ const ScoreBoardPage = () => {
         <h3 className="text-xl sm:text-2xl font-bold text-center mb-10 sm:mb-20">
           Error loading scoreboard: {error.message}
         </h3>
-        {/* <BackButton /> */}
       </div>
     );
   }
@@ -121,7 +136,6 @@ const ScoreBoardPage = () => {
             </tbody>
           </table>
         </div>
-        {/* <BackButton /> */}
       </div>
     </div>
   );

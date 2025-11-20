@@ -1,5 +1,5 @@
-import { useContext, useEffect, useState } from "react";
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   getCurrentUser,
   loginAnonymously,
@@ -11,7 +11,7 @@ import { getUserById } from "../firebase/database";
 const LoginPage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const setIsLoggedInWithUser = async () => {
       const user = await getCurrentUser();
@@ -22,17 +22,19 @@ const LoginPage = () => {
   const handleGoogleSignIn = async () => {
     await loginWithGoogle();
     const currentUser = await getCurrentUser();
+    if (currentUser == null) {
+      return;
+    }
     const user = await getUserById(currentUser.uid);
     if (user.username === undefined) {
       navigate(`/profile/${user.id}/edit`, {
         state: {
-          firstTimeSignIn: true
-        }
-      })
+          firstTimeSignIn: true,
+        },
+      });
     } else {
       navigate("/play");
     }
-    
   };
 
   const handleGuestLogin = async () => {

@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "./Login";
 import demoIllustration from "/src/assets/kanji.gif";
-
 function FeatureCard({ icon, title, desc }) {
   return (
     <div className="bg-white backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">

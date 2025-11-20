@@ -150,6 +150,12 @@ const ProfilePage = () => {
                   </td>
                   <td className="py-3 text-sm sm:text-base">{user.language}</td>
                 </tr>
+                <tr>
+                  <td>
+                    <b>Language</b>
+                  </td>
+                  <td>{user.language}</td>
+                </tr>
               </tbody>
             </table>
           </div>
