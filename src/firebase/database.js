@@ -5,16 +5,11 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
+  query,
+  where,
 } from "firebase/firestore";
 import { db } from "./config";
 
-// ------------------
-// Users
-// ------------------
-
-// Create should be handled by auth.js by logging in
-
-// Read
 async function getUserById(uid) {
   try {
     const userDoc = await getDoc(doc(db, "users", uid));
@@ -82,9 +77,11 @@ async function deleteUser(uid) {
 
 export async function getCharacterById(characterid) {
   try {
-    const charDoc = await getDoc(doc(db, "characters", characterid));
+    const charRef = doc(db, "characters", characterid);
+    const charDoc = await getDoc(charRef);
+
     if (charDoc.exists()) {
-      return { id: charDoc.characterid, ...charDoc.data() };
+      return { id: charDoc.id, ...charDoc.data() };
     } else {
       return null;
     }
@@ -104,16 +101,31 @@ export async function getAllCharacters() {
   }
 }
 
-export async function getRandomCharacter() {
-  const all = await getAllCharacters();
-  if (all.length === 0) return null;
-  const randomIndex = Math.floor(Math.random() * all.length);
-  return all[randomIndex];
-}
+const cache = {};
+export async function getDifficultyCharacter(level, language) {
+  if (language.toLowerCase() == "chinese") {
+    language = "ch";
+  } else if (language.toLowerCase() == "japanese") {
+    language = "jp";
+  }
 
-export async function getDifficultyCharacter(level) {
-  const diff = await getAllCharacters();
-  return diff.filter((char) => char.difficulty === level);
+  const cacheKey = `${level}-${language}`;
+
+  if (cache[cacheKey]) {
+    return cache[cacheKey];
+  }
+
+  const q = query(
+    collection(db, "characters"),
+    where("difficulty", "==", level),
+    where("language", "==", language)
+  );
+
+  const snapshot = await getDocs(q);
+  const result = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  console.log(result);
+  cache[cacheKey] = result;
+  return result;
 }
 
 export { getUserById, getAllUsers, updateUser, deleteUser };

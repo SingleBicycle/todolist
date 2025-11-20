@@ -32,6 +32,7 @@ const ProfileEditPage = () => {
           username: fetchedUser.username || '',
           first_name: fetchedUser.first_name || '',
           last_name: fetchedUser.last_name || '',
+          language: fetchedUser.language || 'Japanese',
         });
 
         
@@ -89,13 +90,13 @@ const ProfileEditPage = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
-        <h3 className="text-2xl font-bold text-center mb-20">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-4 sm:mt-8 px-4">
+        <h3 className="text-xl sm:text-2xl font-bold text-center mb-10 sm:mb-20">
           Loading profile edit page...
         </h3>
         <button
           type="button"
-          className="blue-button ml-8"
+          className="blue-button"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -107,13 +108,13 @@ const ProfileEditPage = () => {
   // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
-        <h3 className="text-2xl font-bold text-center mb-20">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-4 sm:mt-8 px-4">
+        <h3 className="text-xl sm:text-2xl font-bold text-center mb-10 sm:mb-20">
           Error loading profile edit page: {error.message}
         </h3>
         <button
           type="button"
-          className="blue-button ml-8"
+          className="blue-button"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -124,13 +125,13 @@ const ProfileEditPage = () => {
 
   if (user === null) {
     return (
-      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
-        <h3 className="text-2xl font-bold text-center mb-20">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-4 sm:mt-8 px-4">
+        <h3 className="text-xl sm:text-2xl font-bold text-center mb-10 sm:mb-20">
           Profile edit page not found for uid: {uid}
         </h3>
         <button
           type="button"
-          className="blue-button ml-8"
+          className="blue-button"
           onClick={() => navigate(`/profile/${uid}`)}
         >
           Back to profile
@@ -141,13 +142,13 @@ const ProfileEditPage = () => {
 
   if (currentUser.uid != uid) {
     return (
-      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-8">
-        <h3 className="text-2xl font-bold text-center mb-20">
+      <div className="flex flex-col items-center justify-center text-[var(--text)] mt-4 sm:mt-8 px-4">
+        <h3 className="text-xl sm:text-2xl font-bold text-center mb-10 sm:mb-20">
           You can only edit your own profile!
         </h3>
         <button
           type="button"
-          className="blue-button ml-8"
+          className="blue-button"
           onClick={() => navigate(`/`)}
         >
           Back to home
@@ -158,10 +159,10 @@ const ProfileEditPage = () => {
 
   // Users state
   return (
-    <div className="text-[var(--text)] mt-8">
-      <h3 className="flex items-center justify-center text-2xl font-bold text-center mb-20">
+    <div className="text-[var(--text)] mt-4 sm:mt-8 px-4">
+      <h3 className="flex items-center justify-center text-xl sm:text-2xl font-bold text-center mb-10 sm:mb-20">
         {isFirstTimeSignIn && (
-          <div className="w-80/100 center place-content-center p-8 bg-[var(--tertiary)]">
+          <div className="w-full max-w-2xl text-center p-4 sm:p-8 bg-[var(--tertiary)] rounded-md">
             Please complete your profile to get started!
           </div>
         )}
@@ -174,12 +175,12 @@ const ProfileEditPage = () => {
       </h3>
 
       <div className="flex flex-col items-center justify-center">
-        <div className="w-80/100 bg-[var(--tertiary)] rounded-md">
+        <div className="w-full max-w-2xl bg-[var(--tertiary)] rounded-md mx-4">
 
           
-            <form onSubmit={handleSubmit} className="p-8 flex flex-col items-center justify-center">
-            <div className="form-group">
-              <label htmlFor="username" className="form-label">Username</label>
+            <form onSubmit={handleSubmit} className="p-4 sm:p-8 flex flex-col items-center justify-center">
+            <div className="form-group w-full">
+              <label htmlFor="username" className="form-label text-sm sm:text-base">Username</label>
               <input
                 type="text"
                 id="username"
@@ -188,12 +189,12 @@ const ProfileEditPage = () => {
                 onChange={handleChange}
                 required
                 placeholder="Enter your username"
-                className="form-input"
+                className="form-input w-full"
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="first_name" className="form-label">First name</label>
+            {/* <div className="form-group w-full">
+              <label htmlFor="first_name" className="form-label text-sm sm:text-base">First name</label>
               <input
                 type="first_name"
                 id="first_name"
@@ -201,11 +202,11 @@ const ProfileEditPage = () => {
                 value={formData.first_name}
                 onChange={handleChange}
                 placeholder="Enter your first name"
-                className="form-input"
+                className="form-input w-full"
               />
             </div>
-            <div className="form-group">
-              <label htmlFor="last_name" className="form-label">Last name</label>
+            <div className="form-group w-full">
+              <label htmlFor="last_name" className="form-label text-sm sm:text-base">Last name</label>
               <input
                 type="last_name"
                 id="last_name"
@@ -213,21 +214,36 @@ const ProfileEditPage = () => {
                 value={formData.last_name}
                 onChange={handleChange}
                 placeholder="Enter your last name"
-                className="form-input"
+                className="form-input w-full"
               />
+            </div> */}
+
+            <div className="form-group w-full">
+              <label htmlFor="language" className="form-label text-sm sm:text-base">Language</label>
+              <select 
+                type="language" 
+                name="language"
+                id="language"
+                className="form-input w-full"
+                value={formData.language}
+                onChange={(e) => setFormData({ ...formData, language: e.target.value })}>
+                <option value="Japanese">Japanese</option>
+                <option value="Chinese">Chinese</option>
+                {/* <option value="English">English</option> */}
+              </select>
             </div>
 
-            <div className="p-8 flex flex-row items-center justify-center">
+            <div className="p-4 sm:p-8 flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
               <button
                 type="button"
-                className="blue-button ml-8"
+                className="blue-button w-full sm:w-auto"
                 onClick={() => navigate(`/profile/${uid}`)}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="blue-button ml-8"
+                className="blue-button w-full sm:w-auto"
                 disabled={isLoading}
               >
                 {isLoading ? 'Updating...' : 'Save Changes'}
