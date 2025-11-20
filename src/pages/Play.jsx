@@ -45,7 +45,6 @@ const getCanvasSize = () => {
   return { width, height: width };
 };
 
-
 const getDifficultyLabels = (language) => {
   const difficulties =
     DIFFICULTY_MAPPINGS[language] || DIFFICULTY_MAPPINGS.Chinese;
@@ -110,7 +109,7 @@ const PlayPage = ({ updateNavScore }) => {
   const [showModal, setShowModal] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TEST_MODE_TIME);
-  const [language, setLanguage] = useState("chinese");
+  const [language, setLanguage] = useState("Japanese");
 
   const finalScore = useRef(0);
   const refs = useRef({
@@ -142,9 +141,9 @@ const PlayPage = ({ updateNavScore }) => {
       try {
         const user = await getCurrentUser();
         let difficulty = 1;
-        let target = "";
-        let targetId = "";
-        let initialLanguage = "";
+        let target = "右";
+        let targetId = "2UrPjFYn9j62Q1K29AyW";
+        let initialLanguage = "Japanese";
         if (user?.uid) {
           const dbUser = await getUserById(user.uid);
           const date = new Date();
@@ -153,7 +152,6 @@ const PlayPage = ({ updateNavScore }) => {
           });
           refs.dbUser = dbUser;
           initialLanguage = dbUser.language;
-          setLanguage(initialLanguage);
           if (dbUser?.last_word) {
             const lastChar = await getCharacterById(dbUser.last_word);
             if (lastChar) {
@@ -181,6 +179,8 @@ const PlayPage = ({ updateNavScore }) => {
         } else {
           throw new Error("No characters available for this difficulty");
         }
+        console.log(initialLanguage);
+        setLanguage(initialLanguage);
       } catch (err) {
         console.error("Initialization error:", err);
         setError(String(err));
@@ -213,7 +213,12 @@ const PlayPage = ({ updateNavScore }) => {
   useEffect(() => {
     if (refs.writerContainer && charData.content) {
       const { width, height } = getCanvasSize();
-      refs.writer = testtHanziWriter(refs.writerContainer, charData.content, width, height);
+      refs.writer = testtHanziWriter(
+        refs.writerContainer,
+        charData.content,
+        width,
+        height
+      );
     }
   }, [charData.content]);
 
@@ -742,7 +747,11 @@ const PlayPage = ({ updateNavScore }) => {
                             charData.id === id
                               ? "border-blue-600 bg-blue-50 text-blue-600"
                               : "border-gray-300 bg-white text-gray-800 hover:border-blue-400 hover:bg-blue-50"
-                          } ${loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+                          } ${
+                            loading
+                              ? "cursor-not-allowed opacity-50"
+                              : "cursor-pointer"
+                          }`}
                         >
                           {content}
                           {refs.gameMode === "Standard" &&
@@ -810,7 +819,9 @@ const PlayPage = ({ updateNavScore }) => {
             ref={(el) => (refs.canvas = el)}
             style={{ touchAction: "none" }}
             className={`rounded-md m-auto !p-0 absolute top-0 left-0 w-full h-full !bg-transparent cursor-crosshair ${
-              loading ? "!cursor-not-allowed pointer-events-none opacity-50" : ""
+              loading
+                ? "!cursor-not-allowed pointer-events-none opacity-50"
+                : ""
             }`}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -886,9 +897,9 @@ const PlayPage = ({ updateNavScore }) => {
           <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-5 relative max-h-[90vh] overflow-y-auto">
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (refs.gameMode === "Test") {
-                    handleGameModeChange("Test");
+                    handleGameModeChange("Standard");
                     return;
                   }
                   setLoading(false);
@@ -902,7 +913,9 @@ const PlayPage = ({ updateNavScore }) => {
               {/* Evaluation Modal */}
               {error ? (
                 <div className="text-black">
-                  <h2 className="text-2xl font-bold pb-2">Somethings wrong...</h2>{" "}
+                  <h2 className="text-2xl font-bold pb-2">
+                    Somethings wrong...
+                  </h2>{" "}
                   {error}
                 </div>
               ) : refs.results.length ? (
@@ -952,7 +965,11 @@ const PlayPage = ({ updateNavScore }) => {
                                 No drawing
                               </div>
                             ) : (
-                              <img src={refs.images[index]} alt="drawing" className="w-full h-auto"/>
+                              <img
+                                src={refs.images[index]}
+                                alt="drawing"
+                                className="w-full h-auto"
+                              />
                             )}
                           </div>
 
@@ -1028,10 +1045,13 @@ const PlayPage = ({ updateNavScore }) => {
               ) : refs.gameMode === "Test" ? (
                 <div className="space-y-4">
                   <div>
-                    <h2 className="text-2xl font-bold pb-2">Welcome to Test Mode!</h2>
+                    <h2 className="text-2xl font-bold pb-2">
+                      Welcome to Test Mode!
+                    </h2>
                     <p className="">
                       You’ve got {TEST_MODE_TIME} seconds to write 5 characters
-                      and score 1.5× points compared to Standard Mode—good luck 😊!
+                      and score 1.5× points compared to Standard Mode—good luck
+                      😊!
                     </p>
                   </div>
                   <div className="w-full flex justify-between items-center gap-3">

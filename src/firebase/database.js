@@ -123,7 +123,6 @@ export async function getDifficultyCharacter(level, language) {
 
   const snapshot = await getDocs(q);
   const result = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  console.log(result);
   cache[cacheKey] = result;
   return result;
 }

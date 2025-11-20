@@ -61,7 +61,10 @@ function Navbar({ user, isLoading, score }) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsDroppedDown(false);
       }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target)
+      ) {
         setIsMobileMenuOpen(false);
       }
     };
@@ -140,7 +143,7 @@ function Navbar({ user, isLoading, score }) {
             </Link>
             <Link
               className="!px-0 text-sm xl:text-base text-[var(--primary)] hover:text-[var(--accent-primary)] transition-all duration-200 ease-in-out"
-              to="/play"
+              to={"/play"}
             >
               Play
             </Link>
@@ -169,7 +172,11 @@ function Navbar({ user, isLoading, score }) {
                         "Guest"
                       ) : (
                         <span>
-                          {score == 0 ? score : <AnimatedCounter value={score} />}
+                          {score == 0 ? (
+                            score
+                          ) : (
+                            <AnimatedCounter value={score} />
+                          )}
                           pts
                         </span>
                       )}
@@ -243,7 +250,12 @@ function Navbar({ user, isLoading, score }) {
                       </p>
                       {!user.isGuest && (
                         <p className="text-xs text-gray-600">
-                          {score == 0 ? score : <AnimatedCounter value={score} />} pts
+                          {score == 0 ? (
+                            score
+                          ) : (
+                            <AnimatedCounter value={score} />
+                          )}{" "}
+                          pts
                         </p>
                       )}
                     </div>
