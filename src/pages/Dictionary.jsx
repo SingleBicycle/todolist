@@ -1,9 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { 
-    getAllCharacters, 
-    getDifficultyCharacter
-} from "../firebase/database";
-import { getCurrentUser } from "./Login";
+import { useEffect, useState } from "react";
+import { getDifficultyCharacter } from "../firebase/database";
 
 function DifficultyText(props) {
   const difficulty = props.difficulty;
@@ -30,10 +26,16 @@ const DictionaryPage = () => {
     setLoading(true);
     try {
       if (difficulty >= 1 && difficulty <= 6) {
-        const filtered = await getDifficultyCharacter(parseInt(difficulty), "chinese");
+        const filtered = await getDifficultyCharacter(
+          parseInt(difficulty),
+          "chinese"
+        );
         setFilteredCharacters(filtered);
       } else {
-        const filtered = await getDifficultyCharacter(parseInt(12 - difficulty), "japanese");
+        const filtered = await getDifficultyCharacter(
+          parseInt(12 - difficulty),
+          "japanese"
+        );
         setFilteredCharacters(filtered);
       }
     } catch (error) {
@@ -47,22 +49,28 @@ const DictionaryPage = () => {
     <div className="min-h-screen bg-white">
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-12">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-6 sm:mb-8" style={{ color: 'var(--text)' }}>
+        <h1
+          className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-6 sm:mb-8"
+          style={{ color: "var(--text)" }}
+        >
           Dictionary
         </h1>
 
         {/* Filter and Sort Controls */}
         <div className="max-w-4xl mx-auto mb-4 flex flex-col sm:flex-row justify-start items-start sm:items-center gap-2 sm:gap-4">
-          <label className="font-semibold text-sm sm:text-base" style={{ color: 'var(--text)' }}>
+          <label
+            className="font-semibold text-sm sm:text-base"
+            style={{ color: "var(--text)" }}
+          >
             Filter by Difficulty:
           </label>
           <select
             value={selectedDifficulty}
             onChange={(e) => filterByDifficulty(e.target.value)}
             className="w-full sm:w-auto px-3 sm:px-4 py-2 border-2 rounded-lg text-sm sm:text-base"
-            style={{ 
-              borderColor: 'var(--primary)',
-              color: 'var(--text)'
+            style={{
+              borderColor: "var(--primary)",
+              color: "var(--text)",
             }}
           >
             <optgroup label="Chinese">
@@ -85,7 +93,9 @@ const DictionaryPage = () => {
 
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-sm sm:text-base">Loading characters...</p>
+            <p className="text-gray-600 text-sm sm:text-base">
+              Loading characters...
+            </p>
           </div>
         ) : (
           <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
@@ -113,7 +123,10 @@ const DictionaryPage = () => {
                   <div
                     key={char.id}
                     className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors"
-                    style={{ backgroundColor: index % 2 === 0 ? 'var(--tertiary)' : 'white' }}
+                    style={{
+                      backgroundColor:
+                        index % 2 === 0 ? "var(--tertiary)" : "white",
+                    }}
                   >
                     {/* Mobile Layout - Stack vertically */}
                     <div className="md:hidden px-4 py-4">
@@ -122,7 +135,10 @@ const DictionaryPage = () => {
                           {char.content}
                         </div>
                         <div className="text-xs bg-[var(--primary)] text-white px-2 py-1 rounded-full whitespace-nowrap ml-2">
-                          <DifficultyText difficulty={char.difficulty} language={char.language} />
+                          <DifficultyText
+                            difficulty={char.difficulty}
+                            language={char.language}
+                          />
                         </div>
                       </div>
                       <div className="text-sm text-black">
@@ -136,7 +152,10 @@ const DictionaryPage = () => {
                         {char.content}
                       </div>
                       <div className="px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base text-black">
-                        <DifficultyText difficulty={char.difficulty} language={char.language} />
+                        <DifficultyText
+                          difficulty={char.difficulty}
+                          language={char.language}
+                        />
                       </div>
                       <div className="px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base text-black">
                         {char.meanings.join("; ")}

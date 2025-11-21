@@ -13,12 +13,12 @@ import { GoogleGenAI } from "@google/genai";
 import { Slide } from "react-slideshow-image";
 const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 // Constants
-const CWIDTH = 620;
-const CHEIGHT = 620;
+const CWIDTH = 630;
+const CHEIGHT = 630;
 const POINTS_PER_WORD_PER_DIFFICULTY = 30;
 const TEST_MODE_TIME = 40;
 const TEST_MODE_POINT_MULTIPLIER = 1.5;
-const SCORE_THRESHOLD = 70;
+const SCORE_THRESHOLD = 65;
 
 const GAME_MODE = ["Standard", "Test"];
 
@@ -41,7 +41,7 @@ const DIFFICULTY_MAPPINGS = {
 };
 
 const getCanvasSize = () => {
-  const width = window.innerWidth < 600 ? 250 : 620;
+  const width = window.innerWidth < 600 ? 250 : 630;
   return { width, height: width };
 };
 
@@ -144,7 +144,7 @@ const PlayPage = ({ updateNavScore }) => {
         let target = "右";
         let targetId = "2UrPjFYn9j62Q1K29AyW";
         let initialLanguage = "Japanese";
-        if (user?.uid) {
+        if (user?.uid && !user?.isGuest) {
           const dbUser = await getUserById(user.uid);
           const date = new Date();
           await updateUser(user.uid, {
@@ -179,7 +179,6 @@ const PlayPage = ({ updateNavScore }) => {
         } else {
           throw new Error("No characters available for this difficulty");
         }
-        console.log(initialLanguage);
         setLanguage(initialLanguage);
       } catch (err) {
         console.error("Initialization error:", err);
@@ -303,14 +302,13 @@ const PlayPage = ({ updateNavScore }) => {
   // Character navigation
   const findNextIncompleteChar = async (currentId, difficulty) => {
     const completed = refs.dbUser?.completed_words ?? [];
-    const chars = await getDifficultyCharacter(difficulty, language);
-    const ids = chars.map((c) => c.id);
-    const currentIdx = ids.indexOf(currentId);
 
-    for (let i = 1; i <= ids.length; i++) {
-      const idx = (currentIdx + i) % ids.length;
-      if (!completed.includes(ids[idx])) {
-        return chars[idx];
+    const ids = Object.keys(charData.characters);
+    const curIdx = ids.indexOf(currentId);
+    for (let i = curIdx + 1; i < ids.length; i++) {
+      const ch = charData.characters[ids[i]][0];
+      if (!completed.includes(ch)) {
+        return { id: ids[i] };
       }
     }
     return null;
@@ -393,28 +391,24 @@ const PlayPage = ({ updateNavScore }) => {
 
     if (newMode === "Standard") {
       const completed = refs.dbUser?.completed_words ?? [];
-      const chars = await getDifficultyCharacter(charData.difficulty, language);
-      let nextChar = chars[0];
-
-      for (const char of chars) {
-        if (!completed.includes(char.id)) {
-          nextChar = char;
+      const chars = Object.entries(charData.characters);
+      let nextCharId = chars[0];
+      let nextCharContent = chars[1];
+      for (const [id, content] of chars) {
+        if (!completed.includes(id)) {
+          nextCharId = id;
+          nextCharContent = content;
           break;
         }
       }
 
-      const charMap = chars.reduce((acc, char) => {
-        acc[char.id] = char.content;
-        return acc;
-      }, {});
-
-      setCharData({
-        id: nextChar.id,
-        content: nextChar.content,
+      setCharData((prev) => ({
+        ...prev,
+        id: nextCharId,
+        content: nextCharContent,
         difficulty: charData.difficulty,
-        characters: charMap,
-        showCharacters: charMap,
-      });
+        showCharacters: prev.characters,
+      }));
     } else {
       const randomChars = getRandomChars(charData.characters, 5);
       const firstId = Object.keys(randomChars)[0];
@@ -680,11 +674,11 @@ const PlayPage = ({ updateNavScore }) => {
   }, [isTimerRunning, handleEvaluate]);
   // Render
   return (
-    <div className="bg-[var(--tertiary)] w-full min-h-screen overflow-x-hidden pb-8">
-      <div className="container m-auto pt-10 max-w-[620px] px-4">
+    <div className="bg-[var(--tertiary)] w-full overflow-x-hidden overflow-y-hidden pb-8">
+      <div className="container m-auto pt-8 max-w-[630px] px-4">
         {/* Header — compact & mobile friendly */}
-        <div className="flex justify-between items-start pb-1 gap-3">
-          <div className="text-lg flex flex-wrap gap-2 items-center text-[var(--text)]">
+        <div className="flex justify-between items-start gap-2">
+          <div className="text-lg flex flex-wrap gap-2 pb-1 items-center text-[var(--text)]">
             Let's try a{" "}
             <select
               value={DIFFICULTIES[charData.difficulty]}
@@ -721,9 +715,9 @@ const PlayPage = ({ updateNavScore }) => {
               {showGrid && (
                 <div
                   ref={(el) => (refs.gridContainer = el)}
-                  className="absolute top-full left-0 mt-1 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-20 max-h-[300px] overflow-y-auto w-56 md:w-80 lg:w-96"
+                  className="absolute top-full left-0 p-2 bg-white rounded-md border border-gray-300 shadow-lg z-20 max-h-[300px] overflow-y-auto w-56 md:w-80 lg:w-96"
                 >
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1">
                     {Object.entries(charData.showCharacters).map(
                       ([id, content]) => (
                         <button
@@ -789,7 +783,7 @@ const PlayPage = ({ updateNavScore }) => {
         </div>
 
         {/* Canvas Area — mobile-friendly: min height so canvas is usable on small screens */}
-        <div className="relative min-h-[620px] bg-white rounded-md border-gray-300 border-dashed border-4 mt-4 overflow-hidden">
+        <div className="relative min-h-[630px] bg-white rounded-md border-gray-300 border-dashed border-4 pt-2 overflow-hidden">
           <div
             ref={(el) => (refs.writerContainer = el)}
             className="absolute top-0 left-0 w-full h-full pointer-events-none"

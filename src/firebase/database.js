@@ -101,7 +101,7 @@ export async function getAllCharacters() {
   }
 }
 
-const cache = {};
+const chDifficultyCache = {};
 export async function getDifficultyCharacter(level, language) {
   if (language.toLowerCase() == "chinese") {
     language = "ch";
@@ -111,8 +111,8 @@ export async function getDifficultyCharacter(level, language) {
 
   const cacheKey = `${level}-${language}`;
 
-  if (cache[cacheKey]) {
-    return cache[cacheKey];
+  if (chDifficultyCache[cacheKey]) {
+    return chDifficultyCache[cacheKey];
   }
 
   const q = query(
@@ -123,7 +123,7 @@ export async function getDifficultyCharacter(level, language) {
 
   const snapshot = await getDocs(q);
   const result = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  cache[cacheKey] = result;
+  chDifficultyCache[cacheKey] = result;
   return result;
 }
 

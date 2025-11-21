@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../firebase/auth";
 import { getUserById } from "../firebase/database";
 import anonymousPfp from "/src/assets/anonymous-pfp-40x40.png";
+import { formatDate, formatRelativeTime } from "../utils/time";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -65,7 +66,9 @@ const ProfilePage = () => {
   // Users state
   return (
     <div className="text-[var(--text)] mt-4 sm:mt-8 px-4">
-      <h3 className="text-xl sm:text-2xl font-bold text-center mb-8 sm:mb-20">Profile Page</h3>
+      <h3 className="text-xl sm:text-2xl font-bold text-center mb-8 sm:mb-20">
+        Profile Page
+      </h3>
 
       <div className="flex flex-col items-center justify-center">
         <div className="w-full max-w-4xl bg-[var(--tertiary)] rounded-md mx-4 my-2 sm:m-4">
@@ -116,28 +119,19 @@ const ProfilePage = () => {
                   <td className="py-3 pr-4 text-sm sm:text-base">
                     <b>Created at</b>
                   </td>
-                  <td className="py-3 text-sm sm:text-base break-words">{user.created_at}</td>
+                  <td className="py-3 text-sm sm:text-base break-words">
+                    {formatDate(user.created_at)}
+                  </td>
                 </tr>
-                {/* <tr>
-                  <td>Is admin</td>
-                  <td>{user.is_admin}</td>
-                </tr>
-                <tr>
-                  <td>Is on random mode</td>
-                  <td>{user.is_on_random_mode}</td>
-                </tr> */}
                 <tr className="border-b border-gray-200">
                   <td className="py-3 pr-4 text-sm sm:text-base">
                     <b>Last played at</b>
                   </td>
-                  <td className="py-3 text-sm sm:text-base break-words">{user.last_played_at}</td>
-                </tr>
-                <tr className="border-b border-gray-200">
-                  <td className="py-3 pr-4 text-sm sm:text-base">
-                    <b>Last word</b>
+                  <td className="py-3 text-sm sm:text-base break-words">
+                    {formatRelativeTime(user.last_played_at)}
                   </td>
-                  <td className="py-3 text-sm sm:text-base">{user.last_word}</td>
                 </tr>
+
                 <tr className="border-b border-gray-200">
                   <td className="py-3 pr-4 text-sm sm:text-base">
                     <b>Points</b>
@@ -149,12 +143,6 @@ const ProfilePage = () => {
                     <b>Language</b>
                   </td>
                   <td className="py-3 text-sm sm:text-base">{user.language}</td>
-                </tr>
-                <tr>
-                  <td>
-                    <b>Language</b>
-                  </td>
-                  <td>{user.language}</td>
                 </tr>
               </tbody>
             </table>

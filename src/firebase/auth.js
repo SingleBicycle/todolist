@@ -56,12 +56,18 @@ const getCurrentUser = () => {
       auth,
       (user) => {
         unsubscribe();
+        //assume
+        const isGuest =
+          user.displayName == null &&
+          user.email == null &&
+          user.photoURL == null;
         if (user) {
           resolve({
             displayName: user.displayName,
             photoURL: user.photoURL,
             email: user.email,
             uid: user.uid,
+            isGuest,
           });
         } else {
           resolve(null); // no user signed in

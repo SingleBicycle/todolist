@@ -10,7 +10,9 @@ function FeatureCard({ icon, title, desc }) {
         {icon}
       </div>
       <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">{title}</h3>
-      <p className="text-sm sm:text-base text-text/70 leading-relaxed text-[var(--text)]">{desc}</p>
+      <p className="text-sm sm:text-base text-text/70 leading-relaxed text-[var(--text)]">
+        {desc}
+      </p>
     </div>
   );
 }
@@ -31,32 +33,31 @@ const HomePage = () => {
       {/* Hero Section */}
       <section className="container mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-24 md:text-left text-center w-full flex flex-col md:flex-row justify-between gap-6 sm:gap-8">
         <div className="w-full md:w-2/3 lg:w-1/2">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight sm:leading-snug md:leading-16 font-bold mb-4 sm:mb-6">
+          <h1 className="text-4xl md:text-6xl leading-tight sm:leading-snug md:leading-16 font-bold mb-4 sm:mb-6">
             Master Kanji & Chinese Writing
           </h1>
           <p className="!text-gray-600 text-base sm:text-lg max-w-2xl mb-6 sm:mb-8">
             Learn or improve on your Chinese writing skill and see how you stack
             against your friends globally.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center md:justify-start">
+          <div className="flex gap-3 sm:gap-4 items-center justify-center md:justify-start">
             <Link
               to={isLoggedIn ? "/play" : "/login"}
-              className="w-full sm:w-auto bg-[var(--primary)] text-white shadow-md hover:bg-[var(--accent-primary)] transition-all duration-200 ease-in-out px-6 py-3 rounded-md text-center"
+              className="w-auto blue-button text-white shadow-md transition-all duration-200 ease-in-out px-6 py-3 rounded-md text-center"
             >
               Play now
             </Link>
-            <Link
-              to={"/scoreboard"}
-              className="w-full sm:w-auto blue-button text-center"
-            >
+            <Link to={"/scoreboard"} className="w-auto blue-button text-center">
               See scoreboard
             </Link>
           </div>
         </div>
         <div className="flex justify-center md:w-1/3 lg:w-1/2 min-h-48 sm:min-h-60 md:min-h-72">
-          <div className="text-center p-4 sm:p-6 md:p-8 w-full shadow-lg rounded-2xl bg-white flex items-center justify-center">
+          <div className="text-center p-3 sm:p-6 md:p-8 w-full shadow-lg rounded-2xl bg-white flex items-center justify-center">
             <div>
               <img
+                loading="lazy"
+                decoding="async"
                 src={demoIllustration}
                 alt="Demo Illustration"
                 className="mb-4 h-32 sm:h-40 md:h-48 mx-auto"
@@ -68,7 +69,7 @@ const HomePage = () => {
 
       {/* Features */}
       <section className="container mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 sm:mb-10 md:mb-12">
+        <h2 className="text-3xl font-bold text-center mb-8 sm:mb-10 md:mb-12">
           Why Choose Our App?
         </h2>
         <div className="grid gap-6 sm:gap-8 md:gap-10 sm:grid-cols-2">
@@ -97,7 +98,7 @@ const HomePage = () => {
 
       {/* CTA */}
       <section className="bg-[var(--primary)] py-12 sm:py-16 text-center px-4">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 !text-white">
+        <h2 className="text-3xl font-bold mb-3 sm:mb-4 !text-white">
           Ready to Begin Your Journey?
         </h2>
         <p className="mb-6 sm:mb-8 !text-white text-sm sm:text-base">
