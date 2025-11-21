@@ -246,9 +246,9 @@ function Navbar({ user, isLoading, score }) {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-gray-900 truncate">
-                        {username || user.displayName || "Guest"}
+                        {username || user?.displayName || "Guest"}
                       </p>
-                      {!user.isGuest && (
+                      {!user?.isGuest && (
                         <p className="text-xs text-gray-600">
                           {score == 0 ? (
                             score
