@@ -57,11 +57,12 @@ const getCurrentUser = () => {
       (user) => {
         unsubscribe();
         //assume
-        const isGuest =
-          user.displayName == null &&
-          user.email == null &&
-          user.photoURL == null;
+
         if (user) {
+          const isGuest =
+            user.displayName == null &&
+            user.email == null &&
+            user.photoURL == null;
           resolve({
             displayName: user.displayName,
             photoURL: user.photoURL,
