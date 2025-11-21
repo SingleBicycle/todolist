@@ -63,5 +63,10 @@ td {
 }
 
 .blue-button:hover {
+  color: white;
   background-color: var(--secondary);
+}
+
+a:hover {
+  color: var(--secondary)
 }
