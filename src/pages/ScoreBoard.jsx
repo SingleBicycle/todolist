@@ -67,7 +67,7 @@ const ScoreBoardPage = () => {
   // Users state
   return (
     <div className="text-[var(--text)] px-4">
-      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mt-8 sm:mt-12 lg:mt-20 mb-4 sm:mb-6 lg:mb-8">
+      <h2 className="text-2xl lg:text-3xl font-bold text-center py-6 pt-10">
         Scoreboard
       </h2>
       <div className="flex flex-col items-center justify-center">

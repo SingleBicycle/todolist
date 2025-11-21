@@ -11,8 +11,6 @@
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
-    "axios": "^1.11.0",
-    "cors": "^2.8.5",
     "firebase": "^12.2.1",
     "hanzi-writer": "^3.7.3",
     "lucide-react": "^0.542.0",

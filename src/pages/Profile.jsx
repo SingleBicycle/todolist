@@ -65,10 +65,10 @@ const ProfilePage = () => {
 
   // Users state
   return (
-    <div className="text-[var(--text)] mt-4 sm:mt-8 px-4">
-      <h3 className="text-xl sm:text-2xl font-bold text-center mb-8 sm:mb-20">
+    <div className="text-[var(--text)] px-4">
+      <h2 className="text-2xl lg:text-3xl font-bold text-center py-6 pt-10">
         Profile Page
-      </h3>
+      </h2>
 
       <div className="flex flex-col items-center justify-center">
         <div className="w-full max-w-4xl bg-[var(--tertiary)] rounded-md mx-4 my-2 sm:m-4">
@@ -84,7 +84,7 @@ const ProfilePage = () => {
                 {user.username || "No username"}
               </h2>
             </div>
-            {currentUser.uid == uid && (
+            {currentUser && currentUser.uid == uid && (
               <button
                 className="blue-button sm:ml-8 w-full sm:w-auto whitespace-nowrap"
                 onClick={() => {

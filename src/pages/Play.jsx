@@ -13,8 +13,8 @@ import { GoogleGenAI } from "@google/genai";
 import { Slide } from "react-slideshow-image";
 const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 // Constants
-const CWIDTH = 630;
-const CHEIGHT = 630;
+const CWIDTH = 650;
+const CHEIGHT = 620;
 const POINTS_PER_WORD_PER_DIFFICULTY = 30;
 const TEST_MODE_TIME = 40;
 const TEST_MODE_POINT_MULTIPLIER = 1.5;
@@ -41,7 +41,7 @@ const DIFFICULTY_MAPPINGS = {
 };
 
 const getCanvasSize = () => {
-  const width = window.innerWidth < 600 ? 250 : 630;
+  const width = window.innerWidth < 600 ? 250 : 650;
   return { width, height: width };
 };
 
@@ -675,7 +675,7 @@ const PlayPage = ({ updateNavScore }) => {
   // Render
   return (
     <div className="bg-[var(--tertiary)] w-full overflow-x-hidden overflow-y-hidden pb-8">
-      <div className="container m-auto pt-8 max-w-[630px] px-4">
+      <div className="container m-auto pt-6 max-w-[650px] px-4">
         {/* Header — compact & mobile friendly */}
         <div className="flex justify-between items-start gap-2">
           <div className="text-lg flex flex-wrap gap-2 pb-1 items-center text-[var(--text)]">
@@ -783,7 +783,7 @@ const PlayPage = ({ updateNavScore }) => {
         </div>
 
         {/* Canvas Area — mobile-friendly: min height so canvas is usable on small screens */}
-        <div className="relative min-h-[630px] bg-white rounded-md border-gray-300 border-dashed border-4 pt-2 overflow-hidden">
+        <div className="relative min-h-[620px] bg-white rounded-md border-gray-300 border-dashed border-4 pt-2 overflow-hidden">
           <div
             ref={(el) => (refs.writerContainer = el)}
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
@@ -828,7 +828,7 @@ const PlayPage = ({ updateNavScore }) => {
         </div>
 
         {/* Action Buttons — stacked nicely on mobile */}
-        <div className="flex flex-col sm:flex-row justify-between pt-3 gap-3">
+        <div className="flex flex-col sm:flex-row justify-between pt-2 gap-3">
           <div className="flex gap-2 justify-center sm:justify-start">
             <button
               disabled={loading}
